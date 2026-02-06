@@ -1,0 +1,60 @@
+{
+  "name": "ecommerce-backend",
+  "version": "1.0.0",
+  "description": "E-commerce backend API with Node.js, Express, and MongoDB",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node scripts/seedData.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "seed:mens": "node scripts/seedMensFashion.js",
+    "seed:menwomen": "node scripts/seedMenWomen.js",
+    "cleanup:all": "node scripts/cleanupDummyData.js",
+    "cleanup:users": "node scripts/cleanupUsers.js",
+    "cleanup:products": "node scripts/cleanupProducts.js",
+    "test:cart": "node scripts/testCartAPI.js",
+    "test:cart:complete": "node scripts/testCartComplete.js",
+    "test:admin": "node scripts/testAdminLogin.js",
+    "test:admin:api": "node scripts/testAdminAPI.js",
+    "create:user:cart": "node scripts/createUserWithCart.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ecommerce",
+    "api",
+    "nodejs",
+    "express",
+    "mongodb"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "connect-mongo": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.1",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.1",
+    "helmet": "^7.2.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.20.3",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "razorpay": "^2.9.6",
+    "stripe": "^20.0.0",
+    "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  },
+  "type": "commonjs"
+}

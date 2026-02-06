@@ -1,0 +1,172 @@
+.star-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+}
+
+.star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: #ddd;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.star:disabled {
+  cursor: default;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.star:hover:not(:disabled) {
+  color: #ffc107;
+}
+
+.interactive .star:hover:not(:disabled) {
+  transform: scale(1.1);
+}
+
+/* Size variants */
+.star-rating.small .star {
+  width: 16px;
+  height: 16px;
+}
+
+.star-rating.small .star svg {
+  width: 16px;
+  height: 16px;
+}
+
+.star-rating.medium .star {
+  width: 20px;
+  height: 20px;
+}
+
+.star-rating.medium .star svg {
+  width: 20px;
+  height: 20px;
+}
+
+.star-rating.large .star {
+  width: 28px;
+  height: 28px;
+}
+
+.star-rating.large .star svg {
+  width: 28px;
+  height: 28px;
+}
+
+.review-count {
+  color: #666;
+  font-size: 0.875rem;
+  margin-left: 0.25rem;
+}
+
+.rating-text {
+  color: #666;
+  font-size: 0.875rem;
+  margin-left: 0.25rem;
+}
+
+/* Interactive hover effects */
+.interactive .stars:hover .star {
+  color: #ddd;
+}
+
+.interactive .stars:hover .star:hover,
+.interactive .stars:hover .star:hover~.star {
+  color: #ddd;
+}
+
+.interactive .stars:hover .star:hover {
+  color: #ffc107;
+}
+
+.interactive .stars:hover .star:nth-child(-n+1):hover~.star:nth-child(n+2),
+.interactive .stars:hover .star:nth-child(-n+2):hover~.star:nth-child(n+3),
+.interactive .stars:hover .star:nth-child(-n+3):hover~.star:nth-child(n+4),
+.interactive .stars:hover .star:nth-child(-n+4):hover~.star:nth-child(n+5) {
+  color: #ddd;
+}
+
+/* Hover effect for rating selection */
+.interactive .stars .star:hover,
+.interactive .stars .star:hover~.star {
+  color: #ddd;
+}
+
+.interactive .stars .star:hover {
+  color: #ffc107;
+}
+
+.interactive .stars .star:first-child:hover~.star:nth-child(n+2) {
+  color: #ddd;
+}
+
+.interactive .stars .star:nth-child(2):hover~.star:nth-child(n+3) {
+  color: #ddd;
+}
+
+.interactive .stars .star:nth-child(3):hover~.star:nth-child(n+4) {
+  color: #ddd;
+}
+
+.interactive .stars .star:nth-child(4):hover~.star:nth-child(n+5) {
+  color: #ddd;
+}
+
+/* Correct hover behavior */
+.interactive .stars .star:nth-child(1):hover~.star {
+  color: #ddd;
+}
+
+.interactive .stars .star:nth-child(2):hover,
+.interactive .stars .star:nth-child(2):hover~.star:nth-child(1) {
+  color: #ffc107;
+}
+
+.interactive .stars .star:nth-child(3):hover,
+.interactive .stars .star:nth-child(3):hover~.star:nth-child(-n+2) {
+  color: #ffc107;
+}
+
+.interactive .stars .star:nth-child(4):hover,
+.interactive .stars .star:nth-child(4):hover~.star:nth-child(-n+3) {
+  color: #ffc107;
+}
+
+.interactive .stars .star:nth-child(5):hover,
+.interactive .stars .star:nth-child(5):hover~.star:nth-child(-n+4) {
+  color: #ffc107;
+}
+
+/* Simpler approach for hover */
+.interactive .stars {
+  direction: rtl;
+}
+
+.interactive .stars .star {
+  direction: ltr;
+}
+
+.interactive .stars .star:hover,
+.interactive .stars .star:hover~.star {
+  color: #ffc107;
+}
+
+/* Reset direction for non-interactive */
+.star-rating:not(.interactive) .stars {
+  direction: ltr;
+}
