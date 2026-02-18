@@ -106,10 +106,10 @@ const sessionConfig = {
 
 // Use MongoDB-backed session store in production for persistence (Render / Atlas)
 if (isProduction) {
-  const mongoSessionUrl = process.env.MONGO_URI || process.env.MONGODB_URI;
+  const mongoSessionUrl = process.env.MONGO_URI;
 
   if (!mongoSessionUrl) {
-    console.warn('⚠️  No MONGO_URI/MONGODB_URI set for session store. Falling back to in-memory sessions.');
+    console.warn('⚠️  No MONGO_URI set for session store. Falling back to in-memory sessions.');
   } else {
     sessionConfig.store = MongoStore.create({
       mongoUrl: mongoSessionUrl,
@@ -135,16 +135,15 @@ let mongoConnectionStatus = {
 };
 
 const connectMongoDB = async () => {
-  const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ecommerce';
+  const mongoURI = process.env.MONGO_URI;
+
+  if (!mongoURI) {
+    console.error('❌ Missing required environment variable: MONGO_URI');
+    process.exit(1);
+  }
 
   try {
-    // Set connection options
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    };
-
-    await mongoose.connect(mongoURI, options);
+    await mongoose.connect(mongoURI);
 
     mongoConnectionStatus = {
       connected: true,
@@ -203,41 +202,8 @@ const connectMongoDB = async () => {
 
     console.error('❌ MongoDB connection error:', error.message);
 
-    // Try fallback to local MongoDB if MONGODB_URI was set
-    if (process.env.MONGODB_URI && mongoURI !== 'mongodb://localhost:27017/ecommerce') {
-      console.log('💡 Trying to connect to local MongoDB...');
-      try {
-        await mongoose.connect('mongodb://localhost:27017/ecommerce', {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-        });
-
-        mongoConnectionStatus = {
-          connected: true,
-          state: 'connected',
-          connectionString: 'mongodb://localhost:27017/ecommerce',
-          error: null
-        };
-
-        console.log('✅ Connected to local MongoDB');
-
-        // Initialize default admin user after successful local connection
-        setTimeout(async () => {
-          try {
-            await initializeAdminUser();
-          } catch (error) {
-            console.error('⚠️  Failed to initialize admin user:', error.message);
-          }
-        }, 1000);
-      } catch (localError) {
-        console.error('❌ Local MongoDB connection also failed:', localError.message);
-        console.log('📝 Please ensure MongoDB is running or check your connection string');
-        process.exit(1);
-      }
-    } else {
-      console.log('📝 Please ensure MongoDB is running or check your connection string');
-      process.exit(1);
-    }
+    console.log('� Please ensure MongoDB is reachable and your MONGO_URI is correct');
+    process.exit(1);
   }
 };
 

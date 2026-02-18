@@ -26,7 +26,7 @@ const createSessionConfig = () => {
   // Use MongoDB store in production for session persistence
   if (isProduction) {
     baseConfig.store = MongoStore.create({
-      mongoUrl: process.env.MONGODB_URI,
+      mongoUrl: process.env.MONGO_URI,
       touchAfter: 24 * 3600, // Lazy session update (24 hours)
       ttl: 24 * 60 * 60, // Session TTL (24 hours)
       autoRemove: 'native', // Let MongoDB handle expired sessions
