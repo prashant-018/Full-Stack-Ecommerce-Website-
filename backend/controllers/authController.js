@@ -145,21 +145,25 @@ const login = async (req, res) => {
       });
     }
 
-    // Generate tokens
-    const token = generateToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    // Update last login in DB (also updates `updatedAt` because of timestamps)
+    const now = new Date();
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { lastLogin: now },
+      { new: true } // return the updated document
+    );
 
-    // Initialize session
-    initializeUserSession(req, user);
+    // Generate tokens (JWT logic unchanged)
+    const token = generateToken(updatedUser._id);
+    const refreshToken = generateRefreshToken(updatedUser._id);
+
+    // Initialize session with the updated user document
+    initializeUserSession(req, updatedUser);
 
     // Set cookies with appropriate expiry
     const tokenMaxAge = rememberMe ? 30 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000; // 30 days or 1 day
     setAuthCookie(res, token, tokenMaxAge);
     setRefreshTokenCookie(res, refreshToken);
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
 
     res.json({
       success: true,
@@ -167,11 +171,12 @@ const login = async (req, res) => {
       data: {
         token,
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          lastLogin: user.lastLogin
+          id: updatedUser._id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          lastLogin: updatedUser.lastLogin,
+          updatedAt: updatedUser.updatedAt
         },
         session: getSessionInfo(req)
       }

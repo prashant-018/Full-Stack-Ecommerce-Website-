@@ -259,6 +259,33 @@ function AppContent() {
 }
 
 function App() {
+  // Keep-alive ping to prevent Render backend from sleeping
+  useEffect(() => {
+    const BACKEND_URL = 'https://cafes-20-main-6.onrender.com';
+    const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
+
+    const pingBackend = async () => {
+      try {
+        await fetch(`${BACKEND_URL}/api/health`, {
+          method: 'GET',
+          mode: 'no-cors' // Avoid CORS issues for keep-alive ping
+        });
+      } catch (error) {
+        // Silently fail - don't disrupt user experience
+        console.debug('Keep-alive ping failed:', error.message);
+      }
+    };
+
+    // Initial ping
+    pingBackend();
+
+    // Set up interval for periodic pings
+    const intervalId = setInterval(pingBackend, PING_INTERVAL);
+
+    // Cleanup on unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
   return (
     <Router>
       <AuthProvider>
