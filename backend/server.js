@@ -5,7 +5,10 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-const MongoStore = require('connect-mongo');
+
+// Robust connect-mongo import (works across CommonJS / ESM builds and Node 22)
+const connectMongo = require('connect-mongo');
+const MongoStore = connectMongo.default || connectMongo;
 require('dotenv').config();
 
 // Import routes
@@ -101,16 +104,24 @@ const sessionConfig = {
   }
 };
 
-// Use MongoDB store in production for session persistence
+// Use MongoDB-backed session store in production for persistence (Render / Atlas)
 if (isProduction) {
-  sessionConfig.store = MongoStore.create({
-    mongoUrl: process.env.MONGODB_URI,
-    touchAfter: 24 * 3600, // Lazy session update (24 hours)
-    ttl: 24 * 60 * 60, // Session TTL (24 hours)
-    autoRemove: 'native', // Let MongoDB handle expired sessions
-    collectionName: 'sessions',
-    stringify: false
-  });
+  const mongoSessionUrl = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+  if (!mongoSessionUrl) {
+    console.warn('⚠️  No MONGO_URI/MONGODB_URI set for session store. Falling back to in-memory sessions.');
+  } else {
+    sessionConfig.store = MongoStore.create({
+      mongoUrl: mongoSessionUrl,
+      mongoOptions: {
+        dbName: process.env.DB_NAME || 'ecommerce'
+      },
+      touchAfter: 24 * 3600, // Lazy session update (24 hours)
+      ttl: 24 * 60 * 60, // Session TTL (24 hours)
+      autoRemove: 'native', // Let MongoDB handle expired sessions
+      collectionName: 'sessions'
+    });
+  }
 }
 
 app.use(session(sessionConfig));
