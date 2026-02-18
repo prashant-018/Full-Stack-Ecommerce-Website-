@@ -79,7 +79,7 @@ const UserStatus = () => {
     {
       icon: Package,
       label: 'My Orders',
-      href: '/orders',
+      href: '/my-orders',
       show: true
     },
     {

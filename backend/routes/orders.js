@@ -13,7 +13,7 @@ const router = express.Router();
 // @desc    Create new order (supports both guest and logged-in users)
 // @access  Public (with optional auth)
 router.post('/', optionalAuth, [
-  // Items validation - flexible to handle both productId and product fields
+  // Items validation - schema expects productId field
   body('items').isArray({ min: 1 }).withMessage('At least one item is required'),
   body('items.*.product').optional().isMongoId().withMessage('Valid product ID is required'),
   body('items.*.productId').optional().isMongoId().withMessage('Valid product ID is required'),
@@ -23,12 +23,12 @@ router.post('/', optionalAuth, [
   body('items.*.size').notEmpty().withMessage('Item size is required'),
   body('items.*.color').notEmpty().withMessage('Item color is required'),
 
-  // Customer info validation (required for guest orders, optional for logged-in users)
+  // Customer info validation (for reference, but userId is required by schema)
   body('customerInfo').optional().isObject().withMessage('Customer info must be an object'),
   body('customerInfo.name').optional().notEmpty().withMessage('Customer name is required'),
   body('customerInfo.email').optional().isEmail().withMessage('Valid customer email is required'),
 
-  // Shipping address validation
+  // Shipping address validation - schema expects firstName, lastName, street format
   body('shippingAddress').isObject().withMessage('Shipping address is required'),
   body('shippingAddress.fullName').notEmpty().withMessage('Full name is required'),
   body('shippingAddress.address').notEmpty().withMessage('Address is required'),
@@ -37,8 +37,8 @@ router.post('/', optionalAuth, [
   body('shippingAddress.zipCode').notEmpty().withMessage('Zip code is required'),
   body('shippingAddress.phone').notEmpty().withMessage('Phone number is required'),
 
-  // Payment and pricing validation
-  body('paymentMethod').isIn(['COD', 'CARD', 'cod', 'card']).withMessage('Valid payment method is required'),
+  // Payment validation - schema expects lowercase: 'cod', 'card', 'upi', 'netbanking'
+  body('paymentMethod').isIn(['COD', 'CARD', 'UPI', 'NETBANKING', 'cod', 'card', 'upi', 'netbanking']).withMessage('Valid payment method is required (cod, card, upi, netbanking)'),
   body('subtotal').isFloat({ min: 0 }).withMessage('Valid subtotal is required'),
   body('shipping').optional().isFloat({ min: 0 }).withMessage('Valid shipping cost required'),
   body('tax').optional().isFloat({ min: 0 }).withMessage('Valid tax amount required'),
@@ -89,7 +89,15 @@ router.post('/', optionalAuth, [
     if (!req.user && (!customerInfo || !customerInfo.name || !customerInfo.email)) {
       return res.status(400).json({
         success: false,
-        message: 'Customer information (name and email) is required for guest checkout'
+        message: 'Customer information (name and email) is required for guest checkout. Please log in or provide customer details.'
+      });
+    }
+
+    // Check if user is logged in - Order model requires userId
+    if (!req.user || !req.user.userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Please log in to place an order. Guest checkout is not supported with current Order schema.'
       });
     }
 
@@ -209,33 +217,32 @@ router.post('/', optionalAuth, [
       // Don't fail for small differences, just log warning
     }
 
-    // Create order object
+    // Create order object matching the Order model schema
     const orderData = {
-      user: req.user?.userId || null, // null for guest orders
-      customerInfo: customerInfo || {
-        name: req.user?.name || 'Unknown',
-        email: req.user?.email || 'unknown@example.com',
-        phone: req.user?.phone || ''
-      },
-      items: orderItems,
-      shippingAddress,
-      billingAddress: billingAddress || shippingAddress,
-      paymentMethod: paymentMethod.toUpperCase(), // Normalize to uppercase
-      paymentId: paymentId || null,
-      paymentStatus: paymentMethod.toUpperCase() === 'COD' ? 'Pending' : 'Paid',
-      subtotal: calculatedSubtotal,
-      shippingCost: normalizedShipping,
-      shipping: normalizedShipping,
-      tax: tax || 0,
-      discount: discount || 0,
-      total,
+      userId: req.user?.userId || null, // Required by schema
+      orderNumber: `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`, // Required by schema
+      items: orderItems.map(item => ({
+        productId: item.product, // Schema expects 'productId', not 'product'
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color
+      })),
+      totalAmount: total, // Schema expects 'totalAmount', not 'total'
       status: 'pending',
-      orderStatus: 'Pending',
-      statusHistory: [{
-        status: 'pending',
-        updatedAt: new Date(),
-        note: 'Order placed successfully'
-      }]
+      shippingAddress: {
+        firstName: shippingAddress.fullName?.split(' ')[0] || '',
+        lastName: shippingAddress.fullName?.split(' ').slice(1).join(' ') || '',
+        street: shippingAddress.address,
+        city: shippingAddress.city,
+        state: shippingAddress.state,
+        zipCode: shippingAddress.zipCode,
+        country: shippingAddress.country || 'India',
+        phone: shippingAddress.phone
+      },
+      paymentMethod: paymentMethod.toLowerCase(), // Schema expects lowercase: 'cod', 'card', 'upi', 'netbanking'
+      paymentStatus: 'pending' // Schema expects lowercase: 'pending', 'completed', 'failed', 'refunded'
     };
 
     console.log('💾 Saving order to database:', {
@@ -253,8 +260,8 @@ router.post('/', optionalAuth, [
       orderId: order._id,
       orderNumber: order.orderNumber,
       status: order.status,
-      itemsArray: order.items,
-      itemsLength: order.items ? order.items.length : 'undefined'
+      userId: order.userId,
+      totalAmount: order.totalAmount
     });
 
     // Update product stock (simplified - adjust based on your Product schema)
@@ -271,10 +278,17 @@ router.post('/', optionalAuth, [
       }
     }
 
-    // Calculate totalItems safely without using virtual field
-    const totalItems = order.items && Array.isArray(order.items)
-      ? order.items.reduce((total, item) => total + (item.quantity || 0), 0)
-      : 0;
+    // Clear user's cart after successful order
+    try {
+      const user = await User.findById(req.user.userId);
+      if (user) {
+        user.cart = [];
+        await user.save();
+        console.log('✅ Cart cleared for user:', req.user.userId);
+      }
+    } catch (cartError) {
+      console.warn('⚠️ Failed to clear cart:', cartError.message);
+    }
 
     res.status(201).json({
       success: true,
@@ -284,13 +298,11 @@ router.post('/', optionalAuth, [
           _id: order._id,
           orderNumber: order.orderNumber,
           status: order.status,
-          total: order.total,
+          totalAmount: order.totalAmount,
           paymentMethod: order.paymentMethod,
           paymentStatus: order.paymentStatus,
           createdAt: order.createdAt,
-          customerInfo: order.customerInfo,
-          items: order.items || [],
-          totalItems: totalItems,
+          items: order.items,
           shippingAddress: order.shippingAddress
         }
       }
@@ -431,19 +443,50 @@ router.get('/', [auth, admin], [
 // @access  Private
 router.get('/my', auth, async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.userId })
-      .sort({ createdAt: -1 })
-      .populate('items.product', 'name images');
+    console.log('📦 Fetching orders for user:', req.user.userId);
+
+    // Find orders for the logged-in user, sorted by newest first
+    const orders = await Order.find({ userId: req.user.userId })
+      .sort({ createdAt: -1 }) // Newest first
+      .populate('items.productId', 'name images') // Populate product details
+      .select('orderNumber totalAmount status createdAt items shippingAddress paymentMethod paymentStatus'); // Select specific fields
+
+    console.log(`✅ Found ${orders.length} orders for user ${req.user.userId}`);
+
+    // Transform orders to include product details
+    const transformedOrders = orders.map(order => ({
+      _id: order._id,
+      orderNumber: order.orderNumber,
+      totalAmount: order.totalAmount,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      createdAt: order.createdAt,
+      itemCount: order.items.length,
+      items: order.items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        image: item.productId?.images?.[0]?.url || item.productId?.images?.[0] || '/placeholder-image.jpg'
+      })),
+      shippingAddress: order.shippingAddress
+    }));
 
     res.json({
       success: true,
-      data: { orders }
+      data: {
+        orders: transformedOrders,
+        count: transformedOrders.length
+      }
     });
   } catch (error) {
-    console.error('Get my orders error:', error);
+    console.error('❌ Get my orders error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error while fetching orders'
+      message: 'Server error while fetching orders',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -548,33 +591,35 @@ router.put('/:id/status', [auth, admin], [
 // @access  Private/Admin
 router.get('/stats', [auth, admin], async (req, res) => {
   try {
-    // Get order statistics using aggregation
+    console.log('📊 Fetching order stats...');
+
+    // Get order statistics using aggregation - use totalAmount instead of total
     const statusStats = await Order.aggregate([
       {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalAmount: { $sum: '$total' }
+          totalAmount: { $sum: '$totalAmount' } // Fixed: use totalAmount
         }
       }
     ]);
 
     const totalOrders = await Order.countDocuments();
 
-    // Get total revenue from delivered orders
+    // Get total revenue from delivered orders - use totalAmount instead of total
     const revenueResult = await Order.aggregate([
       { $match: { status: { $in: ['delivered'] } } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } } // Fixed: use totalAmount
     ]);
 
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
-    // Get recent orders with safe population
+    // Get recent orders with safe population - use userId instead of user
     const recentOrders = await Order.find()
-      .populate('user', 'name email')
+      .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('orderNumber customerInfo total status createdAt user');
+      .select('orderNumber totalAmount status createdAt userId');
 
     // Format status breakdown
     const statusBreakdown = statusStats.map(stat => ({
@@ -582,6 +627,8 @@ router.get('/stats', [auth, admin], async (req, res) => {
       count: stat.count,
       totalAmount: stat.totalAmount
     }));
+
+    console.log('✅ Order stats calculated:', { totalOrders, totalRevenue, statusBreakdown: statusBreakdown.length });
 
     res.json({
       success: true,
@@ -592,24 +639,22 @@ router.get('/stats', [auth, admin], async (req, res) => {
         recentOrders: recentOrders.map(order => ({
           _id: order._id,
           orderNumber: order.orderNumber,
-          customerInfo: order.customerInfo,
-          total: order.total,
+          totalAmount: order.totalAmount, // Fixed: use totalAmount
           status: order.status,
           createdAt: order.createdAt,
-          // Use populated user data if available, otherwise use customerInfo
-          customer: order.user ? {
-            name: order.user.name,
-            email: order.user.email
+          customer: order.userId ? {
+            name: order.userId.name,
+            email: order.userId.email
           } : {
-            name: order.customerInfo.name,
-            email: order.customerInfo.email
+            name: 'Guest Customer',
+            email: 'No email'
           }
         }))
       }
     });
 
   } catch (error) {
-    console.error('Get order stats error:', error);
+    console.error('❌ Get order stats error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching order statistics',
@@ -625,6 +670,8 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const { id } = req.params;
 
+    console.log('📦 Fetching order:', { orderId: id, userId: req.user.userId, role: req.user.role });
+
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -637,28 +684,30 @@ router.get('/:id', auth, async (req, res) => {
 
     // If not admin, only allow access to own orders
     if (req.user.role !== 'admin') {
-      filter.user = req.user.id;
+      filter.userId = req.user.userId; // Fixed: use userId instead of user
     }
 
     const order = await Order.findOne(filter)
-      .populate('user', 'name email')
-      .populate('items.product', 'name images')
-      .populate('statusHistory.updatedBy', 'name');
+      .populate('userId', 'name email')
+      .populate('items.productId', 'name images');
 
     if (!order) {
+      console.error('❌ Order not found:', id);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
+    console.log('✅ Order found:', { orderNumber: order.orderNumber, status: order.status });
+
     res.json({
       success: true,
-      data: { order }
+      order: order // Fixed: return order directly to match frontend expectation
     });
 
   } catch (error) {
-    console.error('Get order error:', error);
+    console.error('❌ Get order error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error while fetching order'

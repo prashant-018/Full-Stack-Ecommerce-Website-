@@ -10,6 +10,29 @@ const {
 
 const router = express.Router();
 
+/**
+ * DEPRECATION NOTICE
+ *
+ * The /api/mens-fashion routes are now considered legacy.
+ * New clients should use the unified products API instead:
+ *   GET /api/products?section=men
+ *   GET /api/products?section=women
+ *
+ * This router is kept for backward compatibility only. All new
+ * product listing logic is implemented in productService and reused
+ * by both /api/products and /api/mens-fashion to ensure consistent
+ * behavior.
+ */
+router.use((req, res, next) => {
+  res.setHeader('X-Deprecated-Route', '/api/mens-fashion');
+  // Soft deprecation: log once per request without changing response shape
+  console.warn(`[DEPRECATED] /api/mens-fashion is deprecated. Use /api/products?section=men|women instead.`, {
+    method: req.method,
+    path: req.originalUrl,
+  });
+  next();
+});
+
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);

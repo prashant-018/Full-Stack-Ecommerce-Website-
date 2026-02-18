@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Shield, ArrowRight, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const ModernLogin = () => {
   const { login, register, loading, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
   const [isAdminLogin, setIsAdminLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,12 +22,23 @@ const ModernLogin = () => {
     confirmPassword: ''
   });
 
+  // Get the intended destination from location state
+  const from = location.state?.from || '/';
+  const cartItems = location.state?.cartItems;
+  const subtotal = location.state?.subtotal;
+
+  console.log('🔍 Login page loaded with redirect info:', { from, hasCartItems: !!cartItems });
+
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard');
+      console.log('✅ User already authenticated, redirecting to:', from);
+      navigate(from, {
+        replace: true,
+        state: cartItems ? { cartItems, subtotal } : undefined
+      });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, from, cartItems, subtotal]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -67,19 +79,32 @@ const ModernLogin = () => {
       let result;
 
       if (isLogin) {
+        console.log('🔐 Attempting login...');
         result = await login(formData.email, formData.password, isAdminLogin);
 
         if (result.success) {
+          console.log('✅ Login successful, user role:', result.user.role);
+
           // Role-based navigation after successful login
           if (result.user.role === 'admin') {
+            console.log('👑 Admin user, redirecting to /admin');
             navigate('/admin');
           } else {
-            navigate('/dashboard');
+            // Redirect to intended page or default
+            const redirectTo = from || '/';
+            console.log('👤 Regular user, redirecting to:', redirectTo);
+
+            navigate(redirectTo, {
+              replace: true,
+              state: cartItems ? { cartItems, subtotal } : undefined
+            });
           }
         } else {
+          console.error('❌ Login failed:', result.error);
           setError(result.error);
         }
       } else {
+        console.log('📝 Attempting registration...');
         result = await register({
           name: `${formData.firstName} ${formData.lastName}`,
           firstName: formData.firstName,
@@ -89,13 +114,23 @@ const ModernLogin = () => {
         });
 
         if (result.success) {
-          // Always redirect users to dashboard after registration
-          navigate('/dashboard');
+          console.log('✅ Registration successful');
+
+          // Redirect to intended page or dashboard after registration
+          const redirectTo = from && from !== '/' ? from : '/dashboard';
+          console.log('👤 New user, redirecting to:', redirectTo);
+
+          navigate(redirectTo, {
+            replace: true,
+            state: cartItems ? { cartItems, subtotal } : undefined
+          });
         } else {
+          console.error('❌ Registration failed:', result.error);
           setError(result.error);
         }
       }
     } catch (error) {
+      console.error('❌ Unexpected error:', error);
       setError('An unexpected error occurred');
     }
   };
@@ -169,8 +204,8 @@ const ModernLogin = () => {
                   type="button"
                   onClick={() => { setIsLogin(true); setIsAdminLogin(false); }}
                   className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300 ${isLogin && !isAdminLogin
-                      ? 'bg-white text-gray-900 shadow-md transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-gray-900 shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   Sign In
@@ -179,8 +214,8 @@ const ModernLogin = () => {
                   type="button"
                   onClick={() => setIsLogin(false)}
                   className={`px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300 ${!isLogin
-                      ? 'bg-white text-gray-900 shadow-md transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-white text-gray-900 shadow-md transform scale-105'
+                    : 'text-gray-600 hover:text-gray-900'
                     }`}
                 >
                   Sign Up
@@ -195,8 +230,8 @@ const ModernLogin = () => {
                   type="button"
                   onClick={() => setIsAdminLogin(!isAdminLogin)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-medium transition-all duration-300 ${isAdminLogin
-                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
                     }`}
                 >
                   <Shield className="w-3.5 h-3.5" />
@@ -229,8 +264,8 @@ const ModernLogin = () => {
                       onFocus={() => setFocusedField('firstName')}
                       onBlur={() => setFocusedField('')}
                       className={`w-full px-4 py-3 bg-white/50 border rounded-2xl transition-all duration-300 ${focusedField === 'firstName'
-                          ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                       placeholder="John"
                       required={!isLogin}
@@ -248,8 +283,8 @@ const ModernLogin = () => {
                       onFocus={() => setFocusedField('lastName')}
                       onBlur={() => setFocusedField('')}
                       className={`w-full px-4 py-3 bg-white/50 border rounded-2xl transition-all duration-300 ${focusedField === 'lastName'
-                          ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                       placeholder="Doe"
                       required={!isLogin}
@@ -274,8 +309,8 @@ const ModernLogin = () => {
                     onFocus={() => setFocusedField('email')}
                     onBlur={() => setFocusedField('')}
                     className={`w-full pl-12 pr-4 py-3 bg-white/50 border rounded-2xl transition-all duration-300 ${focusedField === 'email'
-                        ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                     placeholder="john@example.com"
                     required
@@ -299,8 +334,8 @@ const ModernLogin = () => {
                     onFocus={() => setFocusedField('password')}
                     onBlur={() => setFocusedField('')}
                     className={`w-full pl-12 pr-12 py-3 bg-white/50 border rounded-2xl transition-all duration-300 ${focusedField === 'password'
-                        ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
-                        : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
+                      : 'border-gray-200 hover:border-gray-300'
                       }`}
                     placeholder="••••••••"
                     required
@@ -332,8 +367,8 @@ const ModernLogin = () => {
                       onFocus={() => setFocusedField('confirmPassword')}
                       onBlur={() => setFocusedField('')}
                       className={`w-full pl-12 pr-12 py-3 bg-white/50 border rounded-2xl transition-all duration-300 ${focusedField === 'confirmPassword'
-                          ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-gray-900 shadow-lg shadow-gray-900/10 bg-white transform scale-[1.02]'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                       placeholder="••••••••"
                       required={!isLogin}
@@ -373,10 +408,10 @@ const ModernLogin = () => {
                 type="submit"
                 disabled={loading}
                 className={`group relative w-full py-4 px-6 rounded-2xl font-semibold text-white transition-all duration-300 ${loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : isAdminLogin
-                      ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 transform hover:scale-[1.02]'
-                      : 'bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg shadow-gray-900/25 hover:shadow-xl hover:shadow-gray-900/40 transform hover:scale-[1.02]'
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : isAdminLogin
+                    ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg shadow-amber-500/25 hover:shadow-xl hover:shadow-amber-500/40 transform hover:scale-[1.02]'
+                    : 'bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 shadow-lg shadow-gray-900/25 hover:shadow-xl hover:shadow-gray-900/40 transform hover:scale-[1.02]'
                   }`}
               >
                 <div className="flex items-center justify-center">

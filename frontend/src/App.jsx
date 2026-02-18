@@ -14,6 +14,7 @@ import Product from './components/Product'
 import Cart from './components/Cart'
 import ModernLogin from './components/ModernLogin'
 import Checkout from './components/Checkout'
+import MyOrders from './components/MyOrders'
 import AdminLayout from './components/AdminLayout'
 import AdminDashboard from './components/AdminDashboard'
 import AddProduct from './components/AddProduct'
@@ -24,6 +25,7 @@ import AdminUsers from './components/AdminUsers'
 import ProductListing from './components/ProductListing'
 import UserDashboard from './components/UserDashboard'
 import UserProfile from './components/UserProfile'
+import OrderSuccess from './pages/OrderSuccess'
 import { ProtectedRoute, AdminRoute, PublicRoute } from './components/ProtectedRoute'
 import { getCart, addItemToCart } from './services/api'
 import { AuthProvider } from './contexts/AuthContext'
@@ -199,6 +201,18 @@ function AppContent() {
         <Route path="/checkout" element={
           <ProtectedRoute>
             <Checkout />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/my-orders" element={
+          <ProtectedRoute>
+            <MyOrders />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/order-success/:orderId" element={
+          <ProtectedRoute>
+            <OrderSuccess />
           </ProtectedRoute>
         } />
 

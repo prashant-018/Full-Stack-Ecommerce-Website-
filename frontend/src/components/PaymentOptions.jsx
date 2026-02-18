@@ -64,7 +64,9 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
         quantity: item.quantity,
         size: item.size,
         color: item.color,
-        finalProductId: item.productId || item._id || item.id
+        finalProductId: item.productId || item._id || item.id,
+        idType: typeof (item.productId || item._id || item.id),
+        idValue: String(item.productId || item._id || item.id)
       })));
 
       console.log('🔍 Shipping info:', shippingInfo);
@@ -74,17 +76,31 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
       const missingFields = requiredShippingFields.filter(field => !shippingInfo[field]);
 
       if (missingFields.length > 0) {
-        alert(`Please fill in all required fields: ${missingFields.join(', ')}`);
+        console.error('Missing required fields:', missingFields);
+        setIsProcessing(false);
         return;
       }
 
       // Validate cart items have valid product IDs
-      const invalidItems = cartItems.filter(item => !item.productId && !item._id && !item.id);
+      const invalidItems = cartItems.filter(item => {
+        const productId = item.id || item.productId || item._id;
+        return !productId;
+      });
+
       if (invalidItems.length > 0) {
         console.error('❌ Cart items missing product IDs:', invalidItems);
-        alert('Some items in your cart are missing product information. Please refresh and try again.');
+        setIsProcessing(false);
         return;
       }
+
+      // Log all product IDs for debugging
+      console.log('📋 Product IDs being sent:', cartItems.map(item => ({
+        name: item.name,
+        id: item.id,
+        productId: item.productId,
+        _id: item._id,
+        selected: item.id || item.productId || item._id
+      })));
 
       // Prepare order data for API - match exact backend schema
       const orderPayload = {
@@ -97,7 +113,18 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
 
         // Items array - convert cart items to order items format
         items: cartItems.map(item => {
-          const productId = item.productId || item._id || item.id;
+          // Extract product ID - prefer item.id (which is product._id from DB)
+          const productId = item.id || item.productId || item._id;
+
+          console.log('🔍 Processing cart item for order:', {
+            itemName: item.name,
+            itemId: item.id,
+            itemProductId: item.productId,
+            item_id: item._id,
+            extractedProductId: productId,
+            productIdType: typeof productId
+          });
+
           if (!productId) {
             throw new Error(`Missing product ID for item: ${item.name}`);
           }
@@ -137,6 +164,7 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
       };
 
       console.log('📦 Sending order payload:', orderPayload);
+      console.log('📦 Order Payload (JSON):', JSON.stringify(orderPayload, null, 2));
 
       // Create order via API
       const response = await createOrder(orderPayload);
@@ -144,17 +172,8 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
       if (response.success) {
         console.log('✅ Order created successfully:', response.data.order);
 
-        // Show success message
-        alert(`Order placed successfully! Order Number: ${response.data.order.orderNumber}`);
-
-        // Navigate to home with success state
-        navigate('/', {
-          state: {
-            orderSuccess: true,
-            orderNumber: response.data.order.orderNumber,
-            orderId: response.data.order._id
-          }
-        });
+        // Navigate to order success page
+        navigate(`/order-success/${response.data.order._id}`);
       } else {
         throw new Error(response.message || 'Failed to create order');
       }
@@ -170,7 +189,11 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
         // Handle validation errors
         const validationErrors = error.response.data.errors;
         if (Array.isArray(validationErrors)) {
-          errorMessage = `Validation failed: ${validationErrors.map(err => err.message || err.msg).join(', ')}`;
+          const errorDetails = validationErrors.map(err =>
+            `${err.field || err.param}: ${err.message || err.msg}`
+          ).join('\n');
+          errorMessage = `Validation failed:\n${errorDetails}`;
+          console.error('📋 Validation errors:', validationErrors);
         }
       } else if (error.message) {
         errorMessage = error.message;
@@ -181,10 +204,15 @@ const PaymentOptions = ({ total, orderData, cartItems, shippingInfo, subtotal, s
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
-        message: error.message
+        message: error.message,
+        fullError: error
       });
 
-      alert(errorMessage);
+      // Log as JSON string for easy copying
+      console.error('📋 Error Response Data (JSON):', JSON.stringify(error.response?.data, null, 2));
+
+      // Log error to console instead of showing alert
+      console.error('Order creation failed:', errorMessage);
     } finally {
       setIsProcessing(false);
     }

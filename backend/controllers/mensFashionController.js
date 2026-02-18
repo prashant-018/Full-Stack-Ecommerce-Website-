@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const productService = require('../services/productService');
 
 // @desc    Create a new men's fashion product
 // @route   POST /api/products
@@ -144,93 +145,24 @@ const getMensProducts = async (req, res) => {
       search
     } = req.query;
 
-    // Build base filter
-    // NOTE: Many older/seeded products might not have the `section` field set.
-    // To keep backward compatibility we:
-    // - Prefer products with correct `section`
-    // - Also include products without `section` but with a matching category prefix
     const sectionFilter = section.toLowerCase(); // 'men' or 'women'
 
-    const filter = {
-      isActive: true
-    };
-
-    // Backward‑compatible section handling
-    if (sectionFilter === 'men') {
-      filter.$or = [
-        { section: 'men' },
-        // Fallback: old products without section but men's categories
-        { section: { $exists: false }, category: /^Men's/ }
-      ];
-    } else if (sectionFilter === 'women') {
-      filter.$or = [
-        { section: 'women' },
-        // Fallback: old products without section but women's categories
-        { section: { $exists: false }, category: /^Women's/ }
-      ];
-    } else {
-      // If some other section is passed, still enforce isActive only
-      // (caller can further filter by category etc.)
-    }
-
-    // Category filter
-    if (category) {
-      filter.category = category;
-    }
-
-    // Price range filter
-    if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseFloat(minPrice);
-      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
-    }
-
-    // Size filter
-    if (sizes) {
-      const sizeArray = Array.isArray(sizes) ? sizes : sizes.split(',');
-      filter['sizes.size'] = { $in: sizeArray };
-    }
-
-    // Color filter
-    if (colors) {
-      const colorArray = Array.isArray(colors) ? colors : colors.split(',');
-      filter['colors.name'] = { $in: colorArray };
-    }
-
-    // Boolean filters
-    if (isNewArrival === 'true') filter.isNewArrival = true;
-    if (isFeatured === 'true') filter.isFeatured = true;
-
-    // Search filter
-    if (search) {
-      filter.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-        { brand: { $regex: search, $options: 'i' } },
-        { category: { $regex: search, $options: 'i' } }
-      ];
-    }
-
-    // Sort options
-    const sortOptions = {};
-    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
-
-    // Calculate pagination
-    const pageNum = parseInt(page);
-    const limitNum = parseInt(limit);
-    const skip = (pageNum - 1) * limitNum;
-
-    // Execute query with optimized fields for grid layout
-    const products = await Product.find(filter)
-      .select('name price originalPrice discountPercentage category images rating isNewArrival brand sku createdAt')
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limitNum)
-      .lean();
-
-    // Get total count for pagination
-    const totalProducts = await Product.countDocuments(filter);
-    const totalPages = Math.ceil(totalProducts / limitNum);
+    // Reuse unified product listing logic with section-aware behavior
+    const { products, pagination } = await productService.listProducts({
+      page,
+      limit,
+      category,
+      section: sectionFilter,
+      minPrice,
+      maxPrice,
+      sizes,
+      colors,
+      search,
+      sortBy,
+      sortOrder,
+      isNew: isNewArrival,
+      isFeatured,
+    });
 
     // Format products for grid layout
     const formattedProducts = products.map(product => ({
@@ -242,8 +174,8 @@ const getMensProducts = async (req, res) => {
       category: product.category,
       primaryImage: product.images.find(img => img.isPrimary)?.url || product.images[0]?.url || '',
       rating: {
-        average: product.rating.average,
-        count: product.rating.count
+        average: product.rating?.average,
+        count: product.rating?.count
       },
       isNewArrival: product.isNewArrival,
       brand: product.brand,
@@ -251,20 +183,20 @@ const getMensProducts = async (req, res) => {
       hasDiscount: product.discountPercentage > 0
     }));
 
-    // Get filter options for frontend
-    const filterOptions = await getFilterOptions(sectionFilter);
+    // Get filter options for frontend from shared service
+    const filterOptions = await productService.getSectionFilterOptions(sectionFilter);
 
     res.json({
       success: true,
       data: {
         products: formattedProducts,
         pagination: {
-          currentPage: pageNum,
-          totalPages,
-          totalProducts,
-          hasNextPage: pageNum < totalPages,
-          hasPrevPage: pageNum > 1,
-          limit: limitNum
+          currentPage: pagination.currentPage,
+          totalPages: pagination.totalPages,
+          totalProducts: pagination.totalProducts,
+          hasNextPage: pagination.hasNextPage,
+          hasPrevPage: pagination.hasPrevPage,
+          limit: parseInt(limit, 10)
         },
         filters: filterOptions
       }

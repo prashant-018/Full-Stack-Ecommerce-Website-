@@ -4,7 +4,8 @@ import { convertAndFormatPrice } from '../utils/currency';
 import api from '../services/api';
 
 const Product = ({ onAddToCart }) => {
-  const { id } = useParams();
+  // This param can be either a slug or a MongoDB ObjectId
+  const { id: slugOrId } = useParams();
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [product, setProduct] = useState(null);
@@ -17,7 +18,7 @@ const Product = ({ onAddToCart }) => {
 
   useEffect(() => {
     // Prevent multiple calls in React StrictMode
-    if (hasFetched.current || !id) return;
+    if (hasFetched.current || !slugOrId) return;
 
     const fetchProduct = async () => {
       try {
@@ -25,26 +26,41 @@ const Product = ({ onAddToCart }) => {
         setLoading(true);
         setError('');
 
-        console.log('Fetching product with ID:', id);
+        console.log('Fetching product with identifier:', slugOrId);
 
-        // Validate ID format before making API call
-        if (!id || id.length !== 24) {
-          setError('Invalid product ID');
-          setLoading(false);
-          return;
+        const isObjectId = /^[0-9a-fA-F]{24}$/.test(slugOrId);
+        let productData = null;
+
+        // 1) Try slug-based endpoint first (works for both slug and ID-looking slugs)
+        try {
+          const slugResponse = await api.get(`/products/slug/${slugOrId}`);
+          console.log('Slug API Response:', slugResponse.data);
+
+          if (slugResponse.data?.success && slugResponse.data.product) {
+            productData = slugResponse.data.product;
+          }
+        } catch (slugError) {
+          console.warn('Slug fetch failed, will consider ID fallback if applicable:', slugError);
         }
 
-        const response = await api.get(`/products/${id}`);
-        console.log('API Response:', response.data);
+        // 2) If slug lookup failed and this looks like an ObjectId, try ID endpoint
+        if (!productData && isObjectId) {
+          const idResponse = await api.get(`/products/${slugOrId}`);
+          console.log('ID API Response:', idResponse.data);
 
-        // Handle API response structure
-        if (!response.data.success) {
-          setError(response.data.message || 'Product not found');
-          setLoading(false);
-          return;
+          if (!idResponse.data.success) {
+            setError(idResponse.data.message || 'Product not found');
+            setLoading(false);
+            return;
+          }
+
+          // Support both { success, product } and { success, data: { product } } shapes
+          productData =
+            idResponse.data.product ||
+            idResponse.data.data?.product ||
+            idResponse.data.data ||
+            null;
         }
-
-        const productData = response.data.data;
 
         if (!productData) {
           setError('Product not found');
@@ -91,10 +107,12 @@ const Product = ({ onAddToCart }) => {
           });
 
           const recommendedData = recommendedResponse.data.success
-            ? recommendedResponse.data.data.products
-            : recommendedResponse.data.products || [];
+            ? (recommendedResponse.data.data?.products || recommendedResponse.data.data || [])
+            : (recommendedResponse.data.data?.products || recommendedResponse.data.products || []);
 
-          setRecommendedProducts(recommendedData.filter(p => p._id !== id).slice(0, 4));
+          setRecommendedProducts(
+            (recommendedData || []).filter(p => (p._id || p.id) !== (productData._id || productData.id)).slice(0, 4)
+          );
         } catch (recError) {
           console.error('Error fetching recommended products:', recError);
           // Don't fail the whole page if recommended products fail
@@ -125,7 +143,7 @@ const Product = ({ onAddToCart }) => {
     return () => {
       hasFetched.current = false;
     };
-  }, [id]);
+  }, [slugOrId]);
 
   const handleAddToCart = () => {
     // Validate size selection
@@ -502,8 +520,8 @@ const Product = ({ onAddToCart }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {recommendedProducts.map((recProduct) => (
                 <Link
-                  key={recProduct._id || recProduct.id || `rec-${recProduct.name}`}
-                  to={`/product/${recProduct._id || recProduct.id}`}
+                      key={recProduct._id || recProduct.id || recProduct.slug || `rec-${recProduct.name}`}
+                      to={`/product/${recProduct.slug || recProduct._id || recProduct.id}`}
                   className="group cursor-pointer"
                 >
                   <div className="aspect-[4/5] bg-gray-100 overflow-hidden mb-3">

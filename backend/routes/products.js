@@ -324,6 +324,49 @@ router.get('/', [
   }
 });
 
+// @route   GET /api/products/slug/:slug
+// @desc    Get single product by slug
+// @access  Public
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    if (!slug || !slug.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product slug is required',
+        error: 'Slug must be a non-empty string',
+      });
+    }
+
+    const product = await Product.findOne({
+      slug: slug.trim(),
+      isActive: true,
+    }).lean();
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found',
+        error: 'No active product exists with the provided slug',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      product,
+      message: 'Product retrieved successfully',
+    });
+  } catch (error) {
+    console.error('❌ Get product by slug error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching product by slug',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+});
+
 // @route   GET /api/products/:id
 // @desc    Get single product by ID
 // @access  Public

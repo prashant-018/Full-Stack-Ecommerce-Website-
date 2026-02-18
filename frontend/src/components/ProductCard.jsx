@@ -2,18 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 const ProductCard = ({ product }) => {
-  // Ensure we have a valid MongoDB ObjectId
+  // Prefer slug for SEO-friendly URLs, fall back to MongoDB ObjectId
+  const productSlug = product.slug;
   const productId = product._id || product.id;
+  const productKey = productSlug || productId;
 
-  // Validate ObjectId format (24 character hex string)
-  const isValidObjectId = productId && /^[0-9a-fA-F]{24}$/.test(productId);
-
-  if (!isValidObjectId) {
-    console.error('ProductCard: Invalid or missing MongoDB ObjectId', {
+  if (!productKey) {
+    console.error('ProductCard: Missing product identifier', {
       productId,
+      productSlug,
       productName: product.name
     });
-    return null; // Don't render invalid products
+    return null;
   }
 
   // Get primary image with proper fallback
@@ -56,20 +56,21 @@ const ProductCard = ({ product }) => {
 
   return (
     <Link
-      to={`/product/${productId}`}
+      to={`/product/${productKey}`}
       className="group cursor-pointer block"
       data-product-id={productId} // For debugging
+      data-product-slug={productSlug} // For debugging
       data-product-section={product.section} // For debugging
     >
       {/* Product Image */}
-      <div className="aspect-[3/4] bg-gray-100 overflow-hidden mb-4 relative">
+      <div className="aspect-[3/4] bg-gray-100 overflow-hidden mb-3 sm:mb-4 relative rounded-sm">
         {discountPercentage > 0 && (
-          <div className="absolute top-3 left-3 bg-red-500 text-white px-2 py-1 text-xs font-medium z-10 rounded">
+          <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-red-500 text-white px-2 py-1 text-xs font-medium z-10 rounded">
             {discountPercentage}% OFF
           </div>
         )}
         {product.isNewArrival && (
-          <div className="absolute top-3 right-3 bg-green-500 text-white px-2 py-1 text-xs font-medium z-10 rounded">
+          <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-green-500 text-white px-2 py-1 text-xs font-medium z-10 rounded">
             NEW
           </div>
         )}
@@ -85,24 +86,24 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Product Info */}
-      <div>
-        <h3 className="text-sm font-medium text-black mb-1 group-hover:text-gray-600 transition-colors line-clamp-2">
+      <div className="space-y-1 sm:space-y-1.5">
+        <h3 className="text-sm font-medium text-black group-hover:text-gray-600 transition-colors line-clamp-2">
           {product.name}
         </h3>
 
         {/* Price */}
-        <div className="flex items-center space-x-2 mb-2">
+        <div className="flex items-center space-x-2">
           {product.originalPrice && product.originalPrice > product.price ? (
             <>
-              <span className="text-sm text-red-500 font-medium">
+              <span className="text-sm font-medium text-red-500">
                 {formatPrice(product.price)}
               </span>
-              <span className="text-sm text-gray-500 line-through">
+              <span className="text-xs sm:text-sm text-gray-500 line-through">
                 {formatPrice(product.originalPrice)}
               </span>
             </>
           ) : (
-            <span className="text-sm text-black font-medium">
+            <span className="text-sm font-medium text-black">
               {formatPrice(product.price || product.originalPrice || 0)}
             </span>
           )}
@@ -110,7 +111,7 @@ const ProductCard = ({ product }) => {
 
         {/* Color Options */}
         {product.colors && product.colors.length > 0 && (
-          <div className="flex items-center space-x-1 mb-2">
+          <div className="flex items-center space-x-1">
             {product.colors.slice(0, 4).map((color, index) => {
               const colorName = typeof color === 'string' ? color : color.name;
               const colorHex = typeof color === 'string' ? '#000000' : color.hex || '#000000';
@@ -118,7 +119,7 @@ const ProductCard = ({ product }) => {
               return (
                 <div
                   key={`${productId}-color-${index}-${colorName}`}
-                  className={`w-4 h-4 rounded-full border ${colorName?.toLowerCase() === 'white' ? 'border-gray-400' : 'border-gray-300'
+                  className={`w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border ${colorName?.toLowerCase() === 'white' ? 'border-gray-400' : 'border-gray-300'
                     }`}
                   style={{ backgroundColor: colorHex }}
                   title={colorName}
@@ -143,7 +144,7 @@ const ProductCard = ({ product }) => {
 
         {/* Category/Brand */}
         {product.brand && (
-          <div className="text-xs text-gray-400 mt-1">
+          <div className="text-xs text-gray-400">
             {product.brand}
           </div>
         )}

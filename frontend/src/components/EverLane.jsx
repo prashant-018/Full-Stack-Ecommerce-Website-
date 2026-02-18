@@ -350,55 +350,57 @@ export default function EverLane({ products = sampleProducts }) {
 
           {/* Carousel */}
           <div className="relative">
-            {/* Left Arrow */}
+            {/* Left Arrow - Hidden on mobile */}
             <button
               onClick={prevSlide}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
+              className="hidden md:block absolute left-0 lg:left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-md text-2xl text-gray-600 hover:text-gray-900 transition-all"
               aria-label="Previous"
             >
               ‹
             </button>
 
-            {/* Right Arrow */}
+            {/* Right Arrow - Hidden on mobile */}
             <button
               onClick={nextSlide}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
+              className="hidden md:block absolute right-0 lg:right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-md text-2xl text-gray-600 hover:text-gray-900 transition-all"
               aria-label="Next"
             >
               ›
             </button>
 
-            {/* Products */}
-            <div className="overflow-hidden mx-10">
+            {/* Products - Responsive Grid */}
+            <div className="overflow-hidden px-0 md:px-12 lg:px-14">
               <div
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${currentSlide * 100}%)` }}
               >
                 {Array.from({ length: totalSlides }).map((_, slideIndex) => (
                   <div key={slideIndex} className="w-full flex-shrink-0">
-                    <div className="grid grid-cols-5 gap-3">
+                    {/* Responsive Grid: 1 col mobile, 2 col sm, 3 col md, 4 col lg, 5 col xl */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
                       {products
                         .slice(slideIndex * 5, slideIndex * 5 + 5)
                         .map((product) => (
                           <div key={product.id} className="group cursor-pointer">
-                            {/* Product Image */}
-                            <div className="aspect-[3/4] bg-gray-100 mb-3 overflow-hidden">
+                            {/* Product Image with Aspect Ratio */}
+                            <div className="aspect-[3/4] bg-gray-100 mb-3 sm:mb-4 overflow-hidden rounded-sm">
                               <img
                                 src={product.src}
                                 alt={product.title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                 onError={handleImageError}
+                                loading="lazy"
                               />
                             </div>
 
                             {/* Product Info */}
-                            <div className="space-y-0.5">
+                            <div className="space-y-1">
                               <div className="flex justify-between items-start">
-                                <span className="text-xs font-medium text-gray-900">
+                                <span className="text-xs sm:text-sm font-medium text-gray-900">
                                   {product.price}
                                 </span>
                               </div>
-                              <h3 className="text-xs text-gray-900 leading-tight">
+                              <h3 className="text-xs sm:text-sm text-gray-900 leading-tight line-clamp-2">
                                 {product.title}
                               </h3>
                               <p className="text-xs text-gray-500">
@@ -430,42 +432,43 @@ export default function EverLane({ products = sampleProducts }) {
       </div>
 
       {/* People Are Talking Section */}
-      <div className="py-16">
-        <div className="max-w-7xl mx-auto px-6">
+      <div className="py-12 sm:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div
             className="relative"
             onMouseEnter={() => setIsTestimonialHovered(true)}
             onMouseLeave={() => setIsTestimonialHovered(false)}
           >
-            {/* Left Arrow */}
+            {/* Left Arrow - Hidden on mobile */}
             <button
               onClick={prevTestimonial}
-              className="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
+              className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
               aria-label="Previous testimonial"
             >
               ‹
             </button>
 
-            {/* Right Arrow */}
+            {/* Right Arrow - Hidden on mobile */}
             <button
               onClick={nextTestimonial}
-              className="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
+              className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors"
               aria-label="Next testimonial"
             >
               ›
             </button>
 
-            <div className="grid md:grid-cols-2 gap-16 items-center mx-10">
+            {/* Responsive Grid: 1 col mobile, 2 col md+ */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center md:mx-10">
               {/* Left Side - Testimonial */}
-              <div className="space-y-4">
-                <h2 className="text-xl font-normal text-gray-900">People Are Talking</h2>
+              <div className="space-y-3 sm:space-y-4 order-2 md:order-1">
+                <h2 className="text-lg sm:text-xl font-normal text-gray-900">People Are Talking</h2>
 
                 {/* Star Rating */}
                 <div className="flex space-x-0.5">
                   {[...Array(5)].map((_, i) => (
                     <span
                       key={i}
-                      className={`text-sm transition-colors duration-300 ${i < currentTestimonial.rating ? 'text-gray-900' : 'text-gray-300'}`}
+                      className={`text-sm sm:text-base transition-colors duration-300 ${i < currentTestimonial.rating ? 'text-gray-900' : 'text-gray-300'}`}
                     >
                       ★
                     </span>
@@ -473,29 +476,30 @@ export default function EverLane({ products = sampleProducts }) {
                 </div>
 
                 {/* Testimonial Text */}
-                <blockquote className="text-base text-gray-900 leading-relaxed transition-opacity duration-500">
+                <blockquote className="text-sm sm:text-base text-gray-900 leading-relaxed transition-opacity duration-500">
                   "{currentTestimonial.text}"
                 </blockquote>
 
                 {/* Attribution */}
-                <p className="text-xs text-gray-500 transition-opacity duration-500">
+                <p className="text-xs sm:text-sm text-gray-500 transition-opacity duration-500">
                   -- {currentTestimonial.reviewer}, <span className="underline cursor-pointer">{currentTestimonial.product}</span>
                 </p>
               </div>
 
               {/* Right Side - Product Image */}
-              <div className="bg-gray-100 aspect-[4/5] overflow-hidden">
+              <div className="bg-gray-100 aspect-[4/5] overflow-hidden rounded-sm order-1 md:order-2">
                 <img
                   src={currentTestimonial.image}
                   alt={currentTestimonial.alt}
                   className="w-full h-full object-cover transition-all duration-500"
                   onError={handleImageError}
+                  loading="lazy"
                 />
               </div>
             </div>
 
             {/* Bottom Pagination Dots */}
-            <div className="flex justify-center mt-8 space-x-1.5">
+            <div className="flex justify-center mt-6 sm:mt-8 space-x-1.5">
               {testimonials.map((_, index) => (
                 <button
                   key={index}
@@ -511,22 +515,25 @@ export default function EverLane({ products = sampleProducts }) {
       </div>
 
       {/* Holiday Gift Picks & Cleaner Fashion Section */}
-      <div className="py-16 border-t border-gray-400">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-2 gap-12">
+      <div className="py-12 sm:py-16 border-t border-gray-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Responsive Grid: 1 col mobile, 2 col md+ */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 md:gap-12">
             {/* Our Holiday Gift Picks */}
             <div className="group cursor-pointer">
-              <div className="relative overflow-hidden mb-6">
+              <div className="relative overflow-hidden mb-4 sm:mb-6 rounded-sm">
                 <img
                   src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop"
                   alt="Holiday Gift Picks - Stack of folded sweaters"
-                  className="w-full h-96 sm:h-[400px] md:h-[450px] lg:h-[500px] object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-80 sm:h-96 md:h-[400px] lg:h-[450px] object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={handleImageError}
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               </div>
-              <div className="text-center space-y-3">
-                <h3 className="text-xl font-normal text-gray-900">Our Holiday Gift Picks</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+              <div className="text-center space-y-2 sm:space-y-3">
+                <h3 className="text-lg sm:text-xl font-normal text-gray-900">Our Holiday Gift Picks</h3>
+                <p className="text-sm text-gray-600 leading-relaxed px-4 sm:px-0">
                   The best presents for everyone on your list.
                 </p>
                 <button className="text-sm text-gray-900 underline hover:no-underline transition-all">
@@ -537,17 +544,19 @@ export default function EverLane({ products = sampleProducts }) {
 
             {/* Cleaner Fashion */}
             <div className="group cursor-pointer">
-              <div className="relative overflow-hidden mb-6">
+              <div className="relative overflow-hidden mb-4 sm:mb-6 rounded-sm">
                 <img
                   src="https://images.unsplash.com/photo-1615397349754-cfa2066a298e?q=80&w=1200&auto=format&fit=crop"
                   alt="Cleaner Fashion - Cotton field"
-                  className="w-full h-96 sm:h-[400px] md:h-[450px] lg:h-[500px] object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-80 sm:h-96 md:h-[400px] lg:h-[450px] object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={handleImageError}
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
               </div>
-              <div className="text-center space-y-3">
-                <h3 className="text-xl font-normal text-gray-900">Cleaner Fashion</h3>
-                <p className="text-sm text-gray-600 leading-relaxed">
+              <div className="text-center space-y-2 sm:space-y-3">
+                <h3 className="text-lg sm:text-xl font-normal text-gray-900">Cleaner Fashion</h3>
+                <p className="text-sm text-gray-600 leading-relaxed px-4 sm:px-0">
                   See the sustainability efforts behind each of our products.
                 </p>
                 <button className="text-sm text-gray-900 underline hover:no-underline transition-all">
@@ -560,12 +569,12 @@ export default function EverLane({ products = sampleProducts }) {
       </div>
 
       {/* Everlane On You Section */}
-      <div className="py-16 border-t border-gray-400">
-        <div className="max-w-7xl mx-auto px-6">
+      <div className="py-12 sm:py-16 border-t border-gray-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h2 className="text-2xl font-normal text-gray-900 mb-4">Everlane On You</h2>
-            <p className="text-sm text-gray-600 mb-2">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-xl sm:text-2xl font-normal text-gray-900 mb-3 sm:mb-4">Everlane On You</h2>
+            <p className="text-sm text-gray-600 mb-2 px-4 sm:px-0">
               Share your latest look with #EverlaneOnYou for a chance to be featured.
             </p>
             <button
@@ -578,31 +587,32 @@ export default function EverLane({ products = sampleProducts }) {
 
           {/* User Photos Carousel */}
           <div className="relative">
-            {/* Left Arrow */}
-            <button className="absolute left-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors">
+            {/* Left Arrow - Hidden on mobile */}
+            <button className="hidden md:block absolute left-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors">
               ‹
             </button>
 
-            {/* Right Arrow */}
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors">
+            {/* Right Arrow - Hidden on mobile */}
+            <button className="hidden md:block absolute right-2 top-1/2 -translate-y-1/2 z-10 text-2xl text-gray-600 hover:text-gray-900 transition-colors">
               ›
             </button>
 
-            {/* Photos Grid */}
-            <div className="overflow-hidden mx-10">
-              <div className="grid grid-cols-5 gap-4">
+            {/* Photos Grid - Responsive: 2 col mobile, 3 col sm, 4 col md, 5 col lg+ */}
+            <div className="overflow-hidden md:mx-10">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                 {userPhotos.map((photoSrc, index) => (
                   <div key={index} className="relative group cursor-pointer">
-                    <div className="aspect-square bg-gray-100 overflow-hidden">
+                    <div className="aspect-square bg-gray-100 overflow-hidden rounded-sm">
                       <img
                         src={photoSrc}
                         alt={`User wearing Everlane outfit ${index + 1}`}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={handleImageError}
+                        loading="lazy"
                       />
                     </div>
-                    <div className="absolute top-3 right-3 bg-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-white rounded-full p-1.5 sm:p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                       </svg>
                     </div>
@@ -621,45 +631,46 @@ export default function EverLane({ products = sampleProducts }) {
       </div>
 
       {/* Features Section */}
-      <div className="py-16 border-t border-gray-400">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-12">
+      <div className="py-12 sm:py-16 border-t border-gray-400">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          {/* Responsive Grid: 1 col mobile, 3 col md+ */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 sm:gap-10 md:gap-12">
             {/* Complimentary Shipping */}
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1v6m6-6v6" />
                 </svg>
               </div>
-              <h3 className="text-base font-normal text-gray-900 mb-3">Complimentary Shipping</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <h3 className="text-sm sm:text-base font-normal text-gray-900 mb-2 sm:mb-3">Complimentary Shipping</h3>
+              <p className="text-sm text-gray-600 leading-relaxed px-4 sm:px-0">
                 Enjoy free shipping on U.S. orders over $100.
               </p>
             </div>
 
             {/* Consciously Crafted */}
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               </div>
-              <h3 className="text-base font-normal text-gray-900 mb-3">Consciously Crafted</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <h3 className="text-sm sm:text-base font-normal text-gray-900 mb-2 sm:mb-3">Consciously Crafted</h3>
+              <p className="text-sm text-gray-600 leading-relaxed px-4 sm:px-0">
                 Designed with you and the planet in mind.
               </p>
             </div>
 
             {/* Come Say Hi */}
             <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-                <svg className="w-12 h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 sm:mb-6 flex items-center justify-center">
+                <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-base font-normal text-gray-900 mb-3">Come Say Hi</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <h3 className="text-sm sm:text-base font-normal text-gray-900 mb-2 sm:mb-3">Come Say Hi</h3>
+              <p className="text-sm text-gray-600 leading-relaxed px-4 sm:px-0">
                 We have 11 stores across the U.S.
               </p>
             </div>

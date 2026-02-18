@@ -11,12 +11,14 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
+const productRoutesV2 = require('./routes/productsV2');
 const mensFashionRoutes = require('./routes/mensFashion');
 const userRoutes = require('./routes/users');
 const userProfileRoutes = require('./routes/user'); // User profile management routes
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/orders');
 const adminOrdersRoutes = require('./routes/adminOrders');
+const dashboardRoutes = require('./routes/dashboard');
 const categoryRoutes = require('./routes/categories');
 const reviewRoutes = require('./routes/reviews');
 
@@ -236,13 +238,15 @@ app.use(sessionActivityTracker);
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes); // Main product routes (CRUD operations)
+app.use('/api/products', productRoutes); // Main product routes (existing)
+app.use('/api/v2/products', productRoutesV2); // New v2 product routes (section + slug based)
 app.use('/api/mens-fashion', mensFashionRoutes); // Men's fashion specific routes
 app.use('/api/users', userRoutes); // Existing user routes (wishlist, etc.)
 app.use('/api/user', userProfileRoutes); // User profile management routes
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminOrdersRoutes);
+app.use('/api/admin', dashboardRoutes); // Admin dashboard stats
 app.use('/api/categories', categoryRoutes);
 app.use('/api/reviews', reviewRoutes);
 

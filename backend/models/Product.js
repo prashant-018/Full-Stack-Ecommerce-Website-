@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const slugify = require('../utils/slugify');
 
 const productSchema = new mongoose.Schema({
   name: {
@@ -6,6 +7,14 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Product name is required'],
     trim: true,
     maxlength: [200, 'Product name cannot exceed 200 characters']
+  },
+  // SEO-friendly unique identifier for product detail pages
+  slug: {
+    type: String,
+    unique: true,
+    index: true,
+    // Not marked required here to avoid breaking existing data on load;
+    // pre-save hook will ensure new/updated products always get a slug.
   },
   price: {
     type: Number,
@@ -52,11 +61,11 @@ const productSchema = new mongoose.Schema({
     ]
   },
   // Section of the catalog this product belongs to (men / women)
-  // Kept optional so existing products without section continue to work.
-  // New products should always set this explicitly.
+  // Required for new products; older documents may not have this field set.
   section: {
     type: String,
     enum: ['men', 'women'],
+    required: [true, 'Product section (men/women) is required'],
     index: true
   },
   sizes: [{
@@ -158,6 +167,8 @@ productSchema.index({ 'rating.average': -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ isNewArrival: 1 });
 productSchema.index({ isFeatured: 1 });
+// Slug index (unique for SEO URLs). Sparse allows legacy docs without slug.
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 // Virtual for total stock across all sizes
 productSchema.virtual('totalStock').get(function () {
@@ -175,12 +186,45 @@ productSchema.virtual('primaryImage').get(function () {
   return primary ? primary.url : (this.images[0] ? this.images[0].url : '');
 });
 
-// Pre-save middleware to calculate discount percentage
-productSchema.pre('save', function (next) {
-  if (this.originalPrice && this.price) {
-    this.discountPercentage = Math.round(((this.originalPrice - this.price) / this.originalPrice) * 100);
+// Pre-save middleware to calculate discount percentage and generate unique slug
+productSchema.pre('save', async function (next) {
+  try {
+    if (this.originalPrice && this.price) {
+      this.discountPercentage = Math.round(
+        ((this.originalPrice - this.price) / this.originalPrice) * 100
+      );
+    }
+
+    // Auto-generate slug for new or renamed products
+    if ((this.isNew || this.isModified('name')) && this.name) {
+      const baseSlug = slugify(this.name);
+      let slug = baseSlug;
+      let counter = 1;
+
+      const ProductModel = this.constructor;
+
+      // Ensure slug uniqueness by appending -1, -2, ... when needed
+      // Exclude current document when checking (for updates).
+      // Uses a while loop; for normal sizes this is cheap.
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const existing = await ProductModel.exists({
+          slug,
+          _id: { $ne: this._id }
+        });
+
+        if (!existing) break;
+
+        slug = `${baseSlug}-${counter++}`;
+      }
+
+      this.slug = slug;
+    }
+
+    next();
+  } catch (err) {
+    next(err);
   }
-  next();
 });
 
 // Method to check if product is in stock

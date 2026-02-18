@@ -27,12 +27,39 @@ const createOrder = async (req, res) => {
     const orderItems = [];
 
     for (const item of items) {
-      const product = await Product.findById(item.productId);
+      // Log the productId for debugging
+      console.log('Processing cart item:', {
+        productId: item.productId,
+        product: item.product,
+        itemKeys: Object.keys(item)
+      });
 
-      if (!product || !product.isActive) {
+      // Handle both 'productId' and 'product' field names for backward compatibility
+      const productIdToLookup = item.productId || item.product;
+
+      if (!productIdToLookup) {
+        console.error('No product ID found in cart item:', item);
         return res.status(400).json({
           success: false,
-          message: `Product ${item.productId} not found or inactive`
+          message: 'Product ID missing in cart item'
+        });
+      }
+
+      console.log('Looking up product by ID:', productIdToLookup);
+      const product = await Product.findById(productIdToLookup);
+
+      if (!product) {
+        console.error('Product not found in DB for id:', productIdToLookup);
+        return res.status(400).json({
+          success: false,
+          message: `Product not found in DB for id: ${productIdToLookup}`
+        });
+      }
+
+      if (!product.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: `Product ${product.name} is currently inactive`
         });
       }
 
@@ -45,9 +72,17 @@ const createOrder = async (req, res) => {
         });
       }
 
+      // Use latest DB price, not cart stored price
       const price = product.salePrice || product.price;
       const itemTotal = price * item.quantity;
       subtotal += itemTotal;
+
+      console.log('Product validated:', {
+        name: product.name,
+        price: price,
+        quantity: item.quantity,
+        itemTotal: itemTotal
+      });
 
       orderItems.push({
         product: product._id,
@@ -88,13 +123,19 @@ const createOrder = async (req, res) => {
 
     // Update product stock
     for (const item of items) {
-      const product = await Product.findById(item.productId);
-      const sizeIndex = product.sizes.findIndex(s => s.name === item.size);
+      const productIdToLookup = item.productId || item.product;
+      const product = await Product.findById(productIdToLookup);
 
-      product.sizes[sizeIndex].stock -= item.quantity;
-      product.stock = product.sizes.reduce((total, size) => total + size.stock, 0);
+      if (product) {
+        const sizeIndex = product.sizes.findIndex(s => s.name === item.size);
 
-      await product.save();
+        if (sizeIndex > -1) {
+          product.sizes[sizeIndex].stock -= item.quantity;
+          product.stock = product.sizes.reduce((total, size) => total + size.stock, 0);
+          await product.save();
+          console.log('Stock updated for product:', product.name);
+        }
+      }
     }
 
     // Clear user's cart

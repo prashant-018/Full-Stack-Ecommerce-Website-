@@ -26,14 +26,24 @@ export const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
+  console.log('🔒 ProtectedRoute check:', {
+    path: location.pathname,
+    isAuthenticated,
+    loading,
+    hasToken: !!localStorage.getItem('authToken')
+  });
+
   if (loading) {
+    console.log('⏳ Auth loading...');
     return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    console.log('❌ Not authenticated, redirecting to login with return path:', location.pathname);
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
+  console.log('✅ Authenticated, rendering protected content');
   return children;
 };
 
@@ -42,15 +52,25 @@ export const AdminRoute = ({ children }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   const location = useLocation();
 
+  console.log('👑 AdminRoute check:', {
+    path: location.pathname,
+    isAuthenticated,
+    isAdmin: isAdmin(),
+    loading
+  });
+
   if (loading) {
+    console.log('⏳ Auth loading...');
     return <LoadingSpinner />;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    console.log('❌ Not authenticated, redirecting to login');
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   if (!isAdmin()) {
+    console.log('❌ Not admin, access denied');
     return (
       <UnauthorizedAccess
         message="You need administrator privileges to access this page."
@@ -59,6 +79,7 @@ export const AdminRoute = ({ children }) => {
     );
   }
 
+  console.log('✅ Admin authenticated, rendering admin content');
   return children;
 };
 
@@ -91,18 +112,28 @@ export const UserRoute = ({ children }) => {
 export const PublicRoute = ({ children }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
 
+  console.log('🌐 PublicRoute check:', {
+    isAuthenticated,
+    isAdmin: isAdmin(),
+    loading
+  });
+
   if (loading) {
+    console.log('⏳ Auth loading...');
     return <LoadingSpinner />;
   }
 
   if (isAuthenticated) {
     // Redirect based on role
     if (isAdmin()) {
+      console.log('👑 Admin already logged in, redirecting to /admin');
       return <Navigate to="/admin" replace />;
     } else {
+      console.log('👤 User already logged in, redirecting to /');
       return <Navigate to="/" replace />;
     }
   }
 
+  console.log('✅ Not authenticated, showing public content');
   return children;
 };

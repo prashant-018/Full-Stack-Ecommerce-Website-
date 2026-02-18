@@ -328,6 +328,8 @@ const removeFromCart = async (req, res) => {
 
     const { itemId } = req.params;
 
+    console.log('Removing cart item by _id:', itemId);
+
     const user = await User.findById(req.user.userId);
     if (!user) {
       return res.status(404).json({
@@ -336,16 +338,22 @@ const removeFromCart = async (req, res) => {
       });
     }
 
-    const cartItem = user.cart.id(itemId);
-    if (!cartItem) {
+    // Find the cart item by its _id
+    const cartItemIndex = user.cart.findIndex(item => item._id.toString() === itemId);
+
+    if (cartItemIndex === -1) {
+      console.error('Cart item not found with _id:', itemId);
       return res.status(404).json({
         success: false,
         message: 'Cart item not found'
       });
     }
 
-    cartItem.remove();
+    // Remove the item using splice (compatible with all Mongoose versions)
+    user.cart.splice(cartItemIndex, 1);
     await user.save();
+
+    console.log('Cart item removed successfully');
 
     res.json({
       success: true,

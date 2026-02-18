@@ -15,6 +15,7 @@ const Women = () => {
   const [allProducts, setAllProducts] = useState([]); // Store all products for filtering
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -140,121 +141,181 @@ const Women = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Breadcrumb */}
-      <div className="border-b border-gray-200 py-4">
-        <div className="max-w-7xl mx-auto px-4 flex items-center space-x-2 text-sm text-gray-600">
+      <div className="border-b border-gray-200 py-3 sm:py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center space-x-2 text-sm text-gray-600">
           <Link to="/" className="hover:text-black cursor-pointer">Home</Link>
           <span>/</span>
           <span className="text-black">Women</span>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar Filters */}
-          <div className="w-64 flex-shrink-0">
-            <div className="space-y-8">
-              {/* Results Count */}
-              <div>
-                <p className="text-sm text-gray-600">
-                  {loading
-                    ? 'Loading products...'
-                    : `${filteredProducts.length || 0} Products`}
-                </p>
-              </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Mobile Filter Toggle Button */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-sm text-sm font-medium text-gray-700 hover:border-gray-900 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters & Sort
+            {(selectedFilters.category.length + selectedFilters.color.length + selectedFilters.size.length) > 0 && (
+              <span className="ml-1 px-2 py-0.5 bg-gray-900 text-white text-xs rounded-full">
+                {selectedFilters.category.length + selectedFilters.color.length + selectedFilters.size.length}
+              </span>
+            )}
+          </button>
+        </div>
 
-              {/* Category Filter */}
-              <div>
-                <h3 className="font-medium text-black mb-4">Category</h3>
-                <div className="space-y-2">
-                  {categories.map((category) => (
-                    <label key={category} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        className="mr-3 w-4 h-4"
-                      />
-                      <span className="text-sm text-gray-700">{category}</span>
-                    </label>
-                  ))}
-                  <button className="text-sm text-gray-500 hover:text-black">
-                    Show More ↓
-                  </button>
-                </div>
-              </div>
+        <div className="flex gap-6 lg:gap-8">
+          {/* Sidebar Filters - Hidden on mobile, shown as overlay when toggled */}
+          <div className={`
+            fixed lg:static inset-0 z-50 lg:z-auto
+            ${isMobileFilterOpen ? 'block' : 'hidden lg:block'}
+          `}>
+            {/* Mobile Overlay Background */}
+            <div
+              className="lg:hidden fixed inset-0 bg-black/50"
+              onClick={() => setIsMobileFilterOpen(false)}
+            />
 
-              {/* Color Filter */}
-              <div>
-                <h3 className="font-medium text-black mb-4">Color</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  {colors.map((color) => (
-                    <div key={color.value} className="flex flex-col items-center">
-                      <ColorDot
-                        color={color}
-                        isSelected={selectedFilters.color.includes(color.value)}
-                        onClick={() => {
-                          // Handle color selection
-                        }}
-                      />
-                      <span className="text-xs text-gray-600 mt-1">{color.name}</span>
-                    </div>
-                  ))}
-                </div>
-                <button className="text-sm text-gray-500 hover:text-black mt-3">
-                  Show More ↓
+            {/* Filter Sidebar */}
+            <div className={`
+              fixed lg:static top-0 left-0 h-full lg:h-auto
+              w-80 lg:w-64 flex-shrink-0
+              bg-white lg:bg-transparent
+              overflow-y-auto lg:overflow-visible
+              transform lg:transform-none transition-transform duration-300
+              ${isMobileFilterOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            `}>
+              {/* Mobile Filter Header */}
+              <div className="lg:hidden sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+                <h2 className="text-lg font-medium text-gray-900">Filters</h2>
+                <button
+                  onClick={() => setIsMobileFilterOpen(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
 
-              {/* Clothing Size Filter */}
-              <div>
-                <h3 className="font-medium text-black mb-4">Clothing</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {clothingSizes.map((size) => (
-                    <button
-                      key={size}
-                      className="border border-gray-300 px-3 py-2 text-sm hover:border-black transition-colors"
-                    >
-                      {size}
-                    </button>
-                  ))}
+              <div className="p-4 lg:p-0 space-y-6 sm:space-y-8">
+                {/* Results Count */}
+                <div>
+                  <p className="text-sm text-gray-600">
+                    {loading
+                      ? 'Loading products...'
+                      : `${filteredProducts.length || 0} Products`}
+                  </p>
                 </div>
-              </div>
 
-              {/* Pants Size Filter */}
-              <div>
-                <h3 className="font-medium text-black mb-4">Pants</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {pantSizes.map((size) => (
-                    <button
-                      key={size}
-                      className="border border-gray-300 px-3 py-2 text-sm hover:border-black transition-colors"
-                    >
-                      {size}
+                {/* Category Filter */}
+                <div>
+                  <h3 className="font-medium text-black mb-3 sm:mb-4 text-sm sm:text-base">Category</h3>
+                  <div className="space-y-2">
+                    {categories.map((category) => (
+                      <label key={category} className="flex items-center cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          className="mr-3 w-4 h-4 cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-700 group-hover:text-black transition-colors">{category}</span>
+                      </label>
+                    ))}
+                    <button className="text-sm text-gray-500 hover:text-black transition-colors">
+                      Show More ↓
                     </button>
-                  ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Jeans Size Filter */}
-              <div>
-                <h3 className="font-medium text-black mb-4">Jeans</h3>
-                <div className="grid grid-cols-4 gap-2">
-                  {jeanSizes.map((size) => (
-                    <button
-                      key={size}
-                      className="border border-gray-300 px-3 py-2 text-sm hover:border-black transition-colors"
-                    >
-                      {size}
-                    </button>
-                  ))}
+                {/* Color Filter */}
+                <div>
+                  <h3 className="font-medium text-black mb-3 sm:mb-4 text-sm sm:text-base">Color</h3>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    {colors.map((color) => (
+                      <div key={color.value} className="flex flex-col items-center">
+                        <ColorDot
+                          color={color}
+                          isSelected={selectedFilters.color.includes(color.value)}
+                          onClick={() => {
+                            // Handle color selection
+                          }}
+                        />
+                        <span className="text-xs text-gray-600 mt-1">{color.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="text-sm text-gray-500 hover:text-black mt-3 transition-colors">
+                    Show More ↓
+                  </button>
+                </div>
+
+                {/* Clothing Size Filter */}
+                <div>
+                  <h3 className="font-medium text-black mb-3 sm:mb-4 text-sm sm:text-base">Clothing</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    {clothingSizes.map((size) => (
+                      <button
+                        key={size}
+                        className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm hover:border-black transition-colors rounded-sm"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pants Size Filter */}
+                <div>
+                  <h3 className="font-medium text-black mb-3 sm:mb-4 text-sm sm:text-base">Pants</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    {pantSizes.map((size) => (
+                      <button
+                        key={size}
+                        className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm hover:border-black transition-colors rounded-sm"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Jeans Size Filter */}
+                <div>
+                  <h3 className="font-medium text-black mb-3 sm:mb-4 text-sm sm:text-base">Jeans</h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    {jeanSizes.map((size) => (
+                      <button
+                        key={size}
+                        className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm hover:border-black transition-colors rounded-sm"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Mobile Apply Button */}
+                <div className="lg:hidden sticky bottom-0 bg-white border-t border-gray-200 pt-4 pb-2">
+                  <button
+                    onClick={() => setIsMobileFilterOpen(false)}
+                    className="w-full bg-gray-900 text-white py-3 rounded-sm text-sm font-medium hover:bg-gray-800 transition-colors"
+                  >
+                    Apply Filters
+                  </button>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Header */}
-            <div className="mb-8">
-              <h1 className="text-2xl font-medium text-black mb-2">
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-xl sm:text-2xl font-medium text-black mb-2">
                 Women's Fashion & Clothing - New Arrivals
               </h1>
               <p className="text-sm text-gray-600">
@@ -264,16 +325,21 @@ const Women = () => {
               </p>
             </div>
 
-            {/* Product Grid */}
+            {/* Product Grid - Responsive: 1 col mobile, 2 col sm, 3 col lg, 4 col xl */}
             {error && !loading && (
               <p className="text-sm text-red-500 mb-4">{error}</p>
             )}
             {loading ? (
-              <p className="text-sm text-gray-600">Loading products...</p>
+              <div className="flex justify-center items-center py-12">
+                <p className="text-sm text-gray-600">Loading products...</p>
+              </div>
             ) : filteredProducts.length === 0 ? (
-              <p className="text-sm text-gray-600">No products found.</p>
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-sm text-gray-600 mb-2">No products found.</p>
+                <p className="text-xs text-gray-500">Try adjusting your filters</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id || product._id}

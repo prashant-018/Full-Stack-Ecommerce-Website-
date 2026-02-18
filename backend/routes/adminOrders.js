@@ -35,10 +35,9 @@ router.get('/orders', [auth, admin], [
     if (status) filter.status = status;
 
     if (search) {
+      // Search by orderNumber only since customerInfo doesn't exist in schema
       filter.$or = [
-        { orderNumber: { $regex: search, $options: 'i' } },
-        { 'customerInfo.name': { $regex: search, $options: 'i' } },
-        { 'customerInfo.email': { $regex: search, $options: 'i' } }
+        { orderNumber: { $regex: search, $options: 'i' } }
       ];
     }
 
@@ -48,9 +47,9 @@ router.get('/orders', [auth, admin], [
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const orders = await Order.find(filter)
-      .populate('user', 'name email')
+      .populate('userId', 'name email')
       .populate({
-        path: 'items.product',
+        path: 'items.productId',
         select: 'name images price salePrice category subcategory'
       })
       .sort(sort)
@@ -61,25 +60,25 @@ router.get('/orders', [auth, admin], [
     const transformedOrders = orders.map(order => {
       const orderObj = order.toObject();
 
-      // Enhanced customer information
-      const customer = order.user ? {
-        name: order.user.name,
-        email: order.user.email,
+      // Enhanced customer information - userId is now the field name
+      const customer = order.userId ? {
+        name: order.userId.name,
+        email: order.userId.email,
         type: 'registered'
       } : {
-        name: order.customerInfo?.name || 'Guest Customer',
-        email: order.customerInfo?.email || 'No email',
+        name: 'Guest Customer',
+        email: 'No email',
         type: 'guest'
       };
 
-      // Enhanced items with product details
+      // Enhanced items with product details - productId is now the field name
       const enhancedItems = orderObj.items.map(item => ({
         ...item,
-        productDetails: item.product ? {
-          name: item.product.name,
-          image: item.product.images?.[0]?.url || item.image || '/placeholder-image.jpg',
-          category: item.product.category,
-          subcategory: item.product.subcategory
+        productDetails: item.productId ? {
+          name: item.productId.name,
+          image: item.productId.images?.[0]?.url || item.image || '/placeholder-image.jpg',
+          category: item.productId.category,
+          subcategory: item.productId.subcategory
         } : {
           name: item.name || 'Unknown Product',
           image: item.image || '/placeholder-image.jpg',
@@ -96,6 +95,7 @@ router.get('/orders', [auth, admin], [
         customer,
         items: enhancedItems,
         totalItems,
+        totalAmount: orderObj.totalAmount, // Use correct field name
         // Add summary for quick display
         itemsSummary: {
           count: totalItems,
@@ -139,33 +139,33 @@ router.get('/orders/stats', [auth, admin], async (req, res) => {
   try {
     console.log('📊 Admin fetching order stats...');
 
-    // Get order statistics using aggregation
+    // Get order statistics using aggregation - use totalAmount instead of total
     const statusStats = await Order.aggregate([
       {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalAmount: { $sum: '$total' }
+          totalAmount: { $sum: '$totalAmount' }
         }
       }
     ]);
 
     const totalOrders = await Order.countDocuments();
 
-    // Get total revenue from delivered orders
+    // Get total revenue from delivered orders - use totalAmount instead of total
     const revenueResult = await Order.aggregate([
       { $match: { status: { $in: ['delivered'] } } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
+      { $group: { _id: null, total: { $sum: '$totalAmount' } } }
     ]);
 
     const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
 
-    // Get recent orders
+    // Get recent orders - populate userId instead of user
     const recentOrders = await Order.find()
-      .populate('user', 'name email')
+      .populate('userId', 'name email')
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('orderNumber customerInfo total status createdAt user');
+      .select('orderNumber totalAmount status createdAt userId');
 
     // Format status breakdown
     const statusBreakdown = statusStats.map(stat => ({
@@ -185,16 +185,15 @@ router.get('/orders/stats', [auth, admin], async (req, res) => {
         recentOrders: recentOrders.map(order => ({
           _id: order._id,
           orderNumber: order.orderNumber,
-          customerInfo: order.customerInfo,
-          total: order.total,
+          totalAmount: order.totalAmount, // Use correct field name
           status: order.status,
           createdAt: order.createdAt,
-          customer: order.user ? {
-            name: order.user.name,
-            email: order.user.email
+          customer: order.userId ? {
+            name: order.userId.name,
+            email: order.userId.email
           } : {
-            name: order.customerInfo?.name || 'Guest Customer',
-            email: order.customerInfo?.email || 'No email'
+            name: 'Guest Customer',
+            email: 'No email'
           }
         }))
       }
@@ -262,7 +261,7 @@ router.put('/orders/:id/status', [auth, admin], [
       requestedStatus: status
     });
 
-    // Store old status for history
+    // Store old status for logging
     const oldStatus = order.status;
 
     // Update order fields
@@ -276,23 +275,16 @@ router.put('/orders/:id/status', [auth, admin], [
       order.notes = note;
     }
 
-    // Add to status history
-    order.statusHistory.push({
-      status: status,
-      updatedBy: req.user.userId,
-      updatedAt: new Date(),
-      note: note || `Status updated from ${oldStatus} to ${status} by admin`
-    });
+    // Note: statusHistory field doesn't exist in current schema
+    // If you need status history, add it to the Order model first
 
     // Set delivery timestamp if status is delivered
     if (status === 'delivered' && oldStatus !== 'delivered') {
       order.deliveredAt = new Date();
     }
 
-    // Set cancellation timestamp if status is cancelled
-    if (status === 'cancelled' && oldStatus !== 'cancelled') {
-      order.cancelledAt = new Date();
-    }
+    // Note: cancelledAt field doesn't exist in current schema
+    // If you need it, add it to the Order model first
 
     await order.save();
 
@@ -303,10 +295,10 @@ router.put('/orders/:id/status', [auth, admin], [
       trackingNumber: order.trackingNumber
     });
 
-    // Populate for response
-    await order.populate('user', 'name email');
+    // Populate for response - use userId and items.productId
+    await order.populate('userId', 'name email');
     await order.populate({
-      path: 'items.product',
+      path: 'items.productId',
       select: 'name images price salePrice category subcategory'
     });
 
@@ -386,8 +378,8 @@ router.delete('/orders/:id', [auth, admin], async (req, res) => {
 
     console.log('📦 Found order to delete:', {
       orderNumber: order.orderNumber,
-      customerEmail: order.customerInfo?.email,
-      total: order.total,
+      userId: order.userId,
+      totalAmount: order.totalAmount,
       status: order.status
     });
 
@@ -424,8 +416,8 @@ router.delete('/orders/:id', [auth, admin], async (req, res) => {
         deletedOrder: {
           _id: deletedOrder._id,
           orderNumber: deletedOrder.orderNumber,
-          customerInfo: deletedOrder.customerInfo,
-          total: deletedOrder.total,
+          userId: deletedOrder.userId,
+          totalAmount: deletedOrder.totalAmount,
           status: deletedOrder.status
         }
       }

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateCartItemQuantity, removeCartItem } from '../services/api';
 import { convertAndFormatPrice } from '../utils/currency';
+import { useAuth } from '../contexts/AuthContext';
 
 const Cart = ({ isOpen, onClose, items = [], setItems, onCartUpdate }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const cartItems = items;
   const token = localStorage.getItem('authToken');
 
@@ -144,7 +146,7 @@ const Cart = ({ isOpen, onClose, items = [], setItems, onCartUpdate }) => {
                           {item.size} | {item.color}
                         </p>
                       </div>
-                      <button 
+                      <button
                         onClick={() => removeItem(item)}
                         className="text-gray-400 hover:text-black ml-2"
                       >
@@ -242,7 +244,25 @@ const Cart = ({ isOpen, onClose, items = [], setItems, onCartUpdate }) => {
 
             <button
               onClick={() => {
+                console.log('🛒 Checkout button clicked');
+                console.log('🔐 Auth status:', { isAuthenticated, hasToken: !!token });
+
                 onClose();
+
+                // Check if user is logged in
+                if (!isAuthenticated) {
+                  console.log('❌ User not authenticated, redirecting to login');
+                  navigate('/login', {
+                    state: {
+                      from: '/checkout',
+                      cartItems: cartItems,
+                      subtotal: subtotal
+                    }
+                  });
+                  return;
+                }
+
+                console.log('✅ User authenticated, proceeding to checkout');
                 navigate('/checkout', {
                   state: {
                     cartItems: cartItems,

@@ -43,9 +43,7 @@ const AdminOrders = () => {
       const authToken = localStorage.getItem('authToken');
       if (!authToken) return;
 
-      console.log('📊 Fetching order stats...');
       const response = await getOrderStats();
-      console.log('📊 Order stats response:', response);
 
       if (response.success) {
         const { statusBreakdown } = response.data;
@@ -71,10 +69,10 @@ const AdminOrders = () => {
       console.error('Error fetching order stats:', error);
       // Don't show error for stats, just log it
     }
-  }, []);
+  }, []); // No dependencies - function is stable
 
-  // Regular function that doesn't need memoization since it's not in dependencies
-  const fetchOrders = async (page = 1) => {
+  // Memoized fetchOrders to prevent infinite re-renders
+  const fetchOrders = useCallback(async (page = 1) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -95,9 +93,7 @@ const AdminOrders = () => {
       if (filterStatus) params.status = filterStatus;
       if (searchTerm) params.search = searchTerm;
 
-      console.log('📡 Fetching orders with params:', params);
       const response = await getAdminOrders(params);
-      console.log('📦 Orders response:', response);
 
       if (response.success) {
         setOrders(response.data.orders || []);
@@ -131,7 +127,7 @@ const AdminOrders = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [filterStatus, searchTerm, navigate]); // Include dependencies that affect the fetch
 
   // Initial load effect - runs only once on mount
   useEffect(() => {
@@ -143,14 +139,18 @@ const AdminOrders = () => {
       return;
     }
 
+    console.log('🔄 Initial load - fetching orders and stats');
     fetchOrders();
     fetchOrderStats();
-  }, []); // Empty dependency array - runs only once
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]); // Only depend on navigate, not the fetch functions
 
   // Effect for filter/search changes
   useEffect(() => {
-    fetchOrders(1); // Reset to page 1 when filtering
-  }, [filterStatus, searchTerm]); // Only depend on filter values
+    console.log('🔍 Filter/search changed - refetching orders');
+    fetchOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, searchTerm]); // Fetch when filters change
 
   const handleStatusUpdate = useCallback(async () => {
     if (!statusUpdate.orderId || !statusUpdate.newStatus) {
@@ -649,7 +649,7 @@ const AdminOrders = () => {
                     </div>
                   </td>
                   <td className="py-4 px-4 text-sm font-medium text-gray-900">
-                    {convertAndFormatPrice(order.total)}
+                    {convertAndFormatPrice(order.totalAmount || order.total || 0)}
                   </td>
                   <td className="py-4 px-4">
                     <div className="flex items-center">
@@ -958,7 +958,7 @@ const AdminOrders = () => {
                       )}
                       <div className="flex justify-between font-medium text-lg border-t border-gray-200 pt-2">
                         <span className="text-gray-900">Total:</span>
-                        <span className="text-gray-900">{convertAndFormatPrice(selectedOrder.total || 0)}</span>
+                        <span className="text-gray-900">{convertAndFormatPrice(selectedOrder.totalAmount || selectedOrder.total || 0)}</span>
                       </div>
                     </div>
                   </div>

@@ -314,6 +314,24 @@ export const createOrder = async (payload) => {
 };
 
 /**
+ * Admin Dashboard API
+ */
+
+/**
+ * Get dashboard statistics (admin only)
+ * @returns {Promise} API response with dashboard stats
+ */
+export const getDashboardStats = async () => {
+  try {
+    const response = await api.get('/admin/dashboard-stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    throw error;
+  }
+};
+
+/**
  * Admin Orders API
  */
 
@@ -373,6 +391,20 @@ export const deleteOrder = async (orderId) => {
     return response.data;
   } catch (error) {
     console.error('Error deleting order:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get logged-in user's orders
+ * @returns {Promise} API response with user's orders
+ */
+export const getUserOrders = async () => {
+  try {
+    const response = await api.get('/orders/my');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
     throw error;
   }
 };
