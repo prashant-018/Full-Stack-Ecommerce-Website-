@@ -1,105 +1,178 @@
 import axios from 'axios';
+import { API_BASE_URL, getApiDebugInfo } from '../config/api.config';
 
-// Get API base URL from environment variable or use defaults
-const getApiBaseURL = () => {
-  // In development with Vite proxy, use relative path
-  if (import.meta.env.DEV) {
-    return '/api';
-  }
-  
-  // In production, use environment variable or fallback
-  const apiUrl = import.meta.env.VITE_API_URL;
-  if (apiUrl) {
-    // Ensure it ends with /api if not already
-    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
-    console.log('🌐 Using API URL:', baseUrl);
-    return baseUrl;
-  }
-  
-  // Fallback (should not be used in production)
-  console.error('❌ VITE_API_URL not set in production! Products will not load.');
-  console.error('Please set VITE_API_URL environment variable in Vercel settings.');
-  // Still return localhost for now, but log the error
-  return 'http://localhost:5002/api';
-};
+// Log API configuration on module load
+console.log('📡 API Service Initialized');
+console.log('🔗 Base URL:', API_BASE_URL);
+if (import.meta.env.PROD) {
+  console.log('🌍 Production Mode');
+  const debugInfo = getApiDebugInfo();
+  console.log('📊 Debug Info:', debugInfo);
+}
 
-// Create axios instance with base configuration
+// Create axios instance with production-ready configuration
 const api = axios.create({
-  baseURL: getApiBaseURL(),
-  timeout: 10000,
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds timeout for production
   headers: {
     'Content-Type': 'application/json',
   },
+  // Enable credentials for cookies/auth
+  withCredentials: false, // Set to true if using cookies
 });
 
-// Request interceptor for adding auth token if available
+// Request interceptor - Add auth token and logging
 api.interceptors.request.use(
   (config) => {
+    // Add authentication token if available
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Log request in development
+    if (import.meta.env.DEV) {
+      console.log(`📤 ${config.method?.toUpperCase()} ${config.url}`, {
+        baseURL: config.baseURL,
+        params: config.params,
+        hasAuth: !!token
+      });
+    }
+
     return config;
   },
   (error) => {
+    console.error('❌ Request Error:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for handling errors
+// Response interceptor - Enhanced error handling
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Log successful responses in development
+    if (import.meta.env.DEV) {
+      console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url}`, {
+        status: response.status,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'N/A'
+      });
+    }
+    return response;
+  },
   (error) => {
-    // Log detailed error information for debugging
+    // Enhanced error logging and handling
+    const errorDetails = {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'N/A'
+    };
+
+    // Network errors (CORS, connection refused, etc.)
     if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-      console.error('❌ Network Error: Cannot connect to backend API');
-      console.error('API Base URL:', api.defaults.baseURL);
-      console.error('Make sure VITE_API_URL is set correctly in Vercel environment variables');
-    } else if (error.response) {
-      console.error('❌ API Error:', error.response.status, error.response.statusText);
-      console.error('Response:', error.response.data);
-    } else {
-      console.error('❌ Request Error:', error.message);
+      console.error('❌ NETWORK ERROR - Cannot connect to backend');
+      console.error('📋 Error Details:', errorDetails);
+      console.error('🔍 Troubleshooting:');
+      console.error('   1. Check if VITE_API_URL is set correctly in Vercel');
+      console.error('   2. Verify backend is running and accessible');
+      console.error('   3. Check CORS configuration on backend');
+      console.error('   4. Verify network connectivity');
+      console.error('   5. Check browser console for CORS errors');
+      
+      // Provide user-friendly error
+      error.userMessage = 'Cannot connect to server. Please check your internet connection.';
+      error.errorType = 'NETWORK_ERROR';
     }
-    
-    if (error.response?.status === 401) {
-      // Handle unauthorized access
-      localStorage.removeItem('authToken');
-      window.location.href = '/login';
+    // HTTP errors (4xx, 5xx)
+    else if (error.response) {
+      console.error(`❌ HTTP ERROR ${error.response.status}: ${error.response.statusText}`);
+      console.error('📋 Error Details:', errorDetails);
+      console.error('📄 Response Data:', error.response.data);
+
+      // Handle specific status codes
+      if (error.response.status === 401) {
+        // Unauthorized - clear auth and redirect
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userRole');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
+        error.userMessage = 'Session expired. Please login again.';
+        error.errorType = 'AUTH_ERROR';
+      } else if (error.response.status === 403) {
+        error.userMessage = 'Access denied. You do not have permission.';
+        error.errorType = 'PERMISSION_ERROR';
+      } else if (error.response.status === 404) {
+        error.userMessage = 'Resource not found.';
+        error.errorType = 'NOT_FOUND';
+      } else if (error.response.status >= 500) {
+        error.userMessage = 'Server error. Please try again later.';
+        error.errorType = 'SERVER_ERROR';
+      } else {
+        error.userMessage = error.response.data?.message || 'An error occurred.';
+        error.errorType = 'HTTP_ERROR';
+      }
     }
+    // Request configuration errors
+    else if (error.request) {
+      console.error('❌ REQUEST ERROR - No response received');
+      console.error('📋 Error Details:', errorDetails);
+      error.userMessage = 'No response from server. Please try again.';
+      error.errorType = 'REQUEST_ERROR';
+    }
+    // Other errors
+    else {
+      console.error('❌ UNKNOWN ERROR');
+      console.error('📋 Error Details:', errorDetails);
+      error.userMessage = 'An unexpected error occurred.';
+      error.errorType = 'UNKNOWN_ERROR';
+    }
+
     return Promise.reject(error);
   }
 );
 
 /**
- * Fetch men's fashion products with filtering and pagination
+ * Fetch products by section (men/women)
+ * @param {string} section - Product section ('men' or 'women')
  * @param {Object} params - Query parameters
- * @param {number} params.page - Page number for pagination
- * @param {number} params.limit - Number of products per page
- * @param {string} params.category - Filter by category
- * @param {number} params.minPrice - Minimum price filter
- * @param {number} params.maxPrice - Maximum price filter
- * @param {string} params.sizes - Comma-separated sizes
- * @param {string} params.colors - Comma-separated colors
- * @param {boolean} params.isNewArrival - Filter new arrivals
- * @param {boolean} params.isFeatured - Filter featured products
- * @param {string} params.sortBy - Sort field
- * @param {string} params.sortOrder - Sort direction (asc/desc)
- * @param {string} params.search - Search query
  * @returns {Promise} API response with products data
  */
-export const fetchMensProducts = async (params = {}) => {
+export const fetchProductsBySection = async (section, params = {}) => {
   try {
+    console.log(`🛍️ Fetching ${section} products...`);
+    
     const queryParams = new URLSearchParams({
-      section: 'men',
-      ...params,
+      section: section.toLowerCase(),
     });
 
-    const response = await api.get(`/products?${queryParams}`);
+    // Add other params, ensuring numbers are converted to strings
+    Object.keys(params).forEach(key => {
+      if (params[key] !== undefined && params[key] !== null) {
+        queryParams.append(key, String(params[key]));
+      }
+    });
+
+    const url = `/products?${queryParams}`;
+    console.log(`📡 Request URL: ${API_BASE_URL}${url}`);
+    
+    const response = await api.get(url);
+    
+    console.log(`✅ Successfully fetched ${section} products`);
+    console.log(`📦 Products count:`, response.data?.data?.products?.length || response.data?.products?.length || 0);
+    
     return response.data;
   } catch (error) {
-    console.error('Error fetching men\'s products:', error);
-    throw error;
+    console.error(`❌ Error fetching ${section}'s products:`, error);
+    // Re-throw with enhanced error info
+    throw {
+      ...error,
+      section,
+      operation: 'fetchProductsBySection'
+    };
   }
 };
 
@@ -119,63 +192,25 @@ export const fetchProductById = async (productId) => {
 };
 
 /**
- * Fetch women's fashion products with filtering and pagination
- * @param {Object} params - Query parameters
- * @returns {Promise} API response with products data
+ * Fetch men's fashion products
  */
-export const fetchWomensProducts = async (params = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      section: 'women',
-      ...params,
-    });
-
-    const response = await api.get(`/products?${queryParams}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching women\'s products:', error);
-    throw error;
-  }
+export const fetchMensProducts = async (params = {}) => {
+  return fetchProductsBySection('men', params);
 };
 
 /**
- * Fetch products by section (men/women)
- * @param {string} section - Product section ('men' or 'women')
- * @param {Object} params - Query parameters
- * @returns {Promise} API response with products data
+ * Fetch women's fashion products
  */
-export const fetchProductsBySection = async (section, params = {}) => {
-  try {
-    const queryParams = new URLSearchParams({
-      section: section.toLowerCase(),
-    });
-
-    // Add other params, ensuring numbers are converted to strings
-    Object.keys(params).forEach(key => {
-      queryParams.append(key, String(params[key]));
-    });
-
-    const response = await api.get(`/products?${queryParams}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error fetching ${section}'s products:`, error);
-    throw error;
-  }
+export const fetchWomensProducts = async (params = {}) => {
+  return fetchProductsBySection('women', params);
 };
 
 /**
  * Search products
- * @param {string} query - Search query
- * @param {Object} params - Additional query parameters
- * @returns {Promise} API response with search results
  */
 export const searchProducts = async (query, params = {}) => {
   try {
-    const queryParams = new URLSearchParams({
-      q: query,
-      ...params,
-    });
-
+    const queryParams = new URLSearchParams({ q: query, ...params });
     const response = await api.get(`/products/search?${queryParams}`);
     return response.data;
   } catch (error) {
@@ -186,8 +221,6 @@ export const searchProducts = async (query, params = {}) => {
 
 /**
  * Fetch featured products
- * @param {Object} params - Query parameters
- * @returns {Promise} API response with featured products
  */
 export const fetchFeaturedProducts = async (params = {}) => {
   try {
@@ -202,8 +235,6 @@ export const fetchFeaturedProducts = async (params = {}) => {
 
 /**
  * Fetch new arrivals
- * @param {Object} params - Query parameters
- * @returns {Promise} API response with new arrivals
  */
 export const fetchNewArrivals = async (params = {}) => {
   try {
@@ -216,14 +247,7 @@ export const fetchNewArrivals = async (params = {}) => {
   }
 };
 
-/**
- * Cart API functions
- */
-
-/**
- * Get user's cart
- * @returns {Promise} API response with cart data
- */
+// Cart API functions
 export const getCart = async () => {
   try {
     const response = await api.get('/cart');
@@ -234,14 +258,6 @@ export const getCart = async () => {
   }
 };
 
-/**
- * Add item to cart
- * @param {string} productId - Product ID
- * @param {string} size - Size
- * @param {string} color - Color
- * @param {number} quantity - Quantity (default: 1)
- * @returns {Promise} API response
- */
 export const addItemToCart = async (productId, size, color, quantity = 1) => {
   try {
     const response = await api.post('/cart/add', {
@@ -257,12 +273,6 @@ export const addItemToCart = async (productId, size, color, quantity = 1) => {
   }
 };
 
-/**
- * Update cart item quantity
- * @param {string} itemId - Cart item ID
- * @param {number} quantity - New quantity
- * @returns {Promise} API response
- */
 export const updateCartItemQuantity = async (itemId, quantity) => {
   try {
     const response = await api.put(`/cart/update/${itemId}`, { quantity });
@@ -273,32 +283,21 @@ export const updateCartItemQuantity = async (itemId, quantity) => {
   }
 };
 
-/**
- * Remove item from cart
- * @param {string} itemId - Cart item ID
- * @returns {Promise} API response
- */
 export const removeCartItem = async (arg) => {
   try {
-    // Backward compatible: remove by cart subdocument itemId
     if (typeof arg === 'string') {
       const response = await api.delete(`/cart/remove/${arg}`);
       return response.data;
     }
-
-    // Preferred: remove by { productId, size, color } (unique key)
     const { productId, size, color, itemId } = arg || {};
-
-    // If itemId is present, try that first (fast path), but fall back to composite key if needed.
     if (itemId) {
       try {
         const response = await api.delete(`/cart/remove/${itemId}`);
         return response.data;
       } catch (err) {
-        // If itemId delete fails (404 / mismatch), fall back to composite key removal
+        // Fall through to composite key removal
       }
     }
-
     const response = await api.delete('/cart/remove', {
       params: { productId, size, color }
     });
@@ -309,10 +308,6 @@ export const removeCartItem = async (arg) => {
   }
 };
 
-/**
- * Clear entire cart
- * @returns {Promise} API response
- */
 export const clearCart = async () => {
   try {
     const response = await api.delete('/cart/clear');
@@ -323,21 +318,7 @@ export const clearCart = async () => {
   }
 };
 
-/**
- * Orders API
- */
-
-/**
- * Create order from checkout
- * @param {Object} payload
- * @param {Array} payload.items - [{ productId, name, image, price, size, color, quantity }]
- * @param {Object} payload.shippingAddress
- * @param {'COD'|'CARD'} payload.paymentMethod
- * @param {number} payload.subtotal
- * @param {number} payload.shipping
- * @param {number} payload.tax
- * @param {number} payload.total
- */
+// Orders API
 export const createOrder = async (payload) => {
   try {
     const response = await api.post('/orders', payload);
@@ -348,92 +329,6 @@ export const createOrder = async (payload) => {
   }
 };
 
-/**
- * Admin Dashboard API
- */
-
-/**
- * Get dashboard statistics (admin only)
- * @returns {Promise} API response with dashboard stats
- */
-export const getDashboardStats = async () => {
-  try {
-    const response = await api.get('/admin/dashboard-stats');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
-    throw error;
-  }
-};
-
-/**
- * Admin Orders API
- */
-
-/**
- * Get all orders (admin only)
- * @param {Object} params - Query parameters
- * @returns {Promise} API response with orders data
- */
-export const getAdminOrders = async (params = {}) => {
-  try {
-    const response = await api.get('/admin/orders', { params });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching admin orders:', error);
-    throw error;
-  }
-};
-
-/**
- * Get order statistics (admin only)
- * @returns {Promise} API response with order stats
- */
-export const getOrderStats = async () => {
-  try {
-    const response = await api.get('/admin/orders/stats');
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching order stats:', error);
-    throw error;
-  }
-};
-
-/**
- * Update order status (admin only)
- * @param {string} orderId - Order ID
- * @param {Object} updateData - Status update data
- * @returns {Promise} API response
- */
-export const updateOrderStatus = async (orderId, updateData) => {
-  try {
-    const response = await api.put(`/admin/orders/${orderId}/status`, updateData);
-    return response.data;
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    throw error;
-  }
-};
-
-/**
- * Delete order (admin only)
- * @param {string} orderId - Order ID
- * @returns {Promise} API response
- */
-export const deleteOrder = async (orderId) => {
-  try {
-    const response = await api.delete(`/admin/orders/${orderId}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting order:', error);
-    throw error;
-  }
-};
-
-/**
- * Get logged-in user's orders
- * @returns {Promise} API response with user's orders
- */
 export const getUserOrders = async () => {
   try {
     const response = await api.get('/orders/my');
@@ -444,4 +339,56 @@ export const getUserOrders = async () => {
   }
 };
 
+// Admin API
+export const getDashboardStats = async () => {
+  try {
+    const response = await api.get('/admin/dashboard-stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching dashboard stats:', error);
+    throw error;
+  }
+};
+
+export const getAdminOrders = async (params = {}) => {
+  try {
+    const response = await api.get('/admin/orders', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching admin orders:', error);
+    throw error;
+  }
+};
+
+export const getOrderStats = async () => {
+  try {
+    const response = await api.get('/admin/orders/stats');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching order stats:', error);
+    throw error;
+  }
+};
+
+export const updateOrderStatus = async (orderId, updateData) => {
+  try {
+    const response = await api.put(`/admin/orders/${orderId}/status`, updateData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    throw error;
+  }
+};
+
+export const deleteOrder = async (orderId) => {
+  try {
+    const response = await api.delete(`/admin/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    throw error;
+  }
+};
+
+// Export default api instance
 export default api;

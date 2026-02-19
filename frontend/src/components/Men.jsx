@@ -76,17 +76,23 @@ const Men = () => {
         console.error('❌ Failed to load men products:', err);
         console.error('Error details:', {
           message: err.message,
+          code: err.code,
           response: err.response?.data,
           status: err.response?.status,
-          apiUrl: err.config?.url
+          apiUrl: err.config?.url,
+          baseURL: err.config?.baseURL,
+          errorType: err.errorType,
+          userMessage: err.userMessage
         });
+        
         if (isMounted) {
-          // More helpful error message
-          if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
-            setError('Cannot connect to server. Please check your internet connection and ensure the backend is running.');
-          } else {
-            setError(`Failed to load products: ${err.response?.data?.message || err.message || 'Unknown error'}`);
-          }
+          // Use enhanced error message from API interceptor
+          const errorMessage = err.userMessage || 
+            (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')
+              ? 'Cannot connect to server. Please check your internet connection and ensure the backend is running.'
+              : `Failed to load products: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+          
+          setError(errorMessage);
         }
       } finally {
         if (isMounted) {

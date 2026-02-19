@@ -29,6 +29,7 @@ import OrderSuccess from './pages/OrderSuccess'
 import { ProtectedRoute, AdminRoute, PublicRoute } from './components/ProtectedRoute'
 import { getCart, addItemToCart } from './services/api'
 import { AuthProvider } from './contexts/AuthContext'
+import ApiDebugPanel from './components/ApiDebugPanel'
 
 // Home Page Component
 function HomePage() {
@@ -254,6 +255,9 @@ function AppContent() {
           onCartUpdate={loadCartFromDB}
         />
       )}
+      
+      {/* API Debug Panel (only in dev/debug mode) */}
+      <ApiDebugPanel />
     </div>
   );
 }

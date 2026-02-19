@@ -87,19 +87,30 @@ const prodCorsOptions = {
     // Always allow Vercel preview deployments (*.vercel.app)
     const isVercelDomain = origin.includes('.vercel.app');
     
-    // Check if origin is in allowed list or is a Vercel domain
-    if (allowedOrigins.includes(origin) || isVercelDomain) {
+    // Allow common deployment platforms
+    const isAllowedPlatform = 
+      origin.includes('.vercel.app') ||
+      origin.includes('.netlify.app') ||
+      origin.includes('.github.io') ||
+      origin.includes('.railway.app') ||
+      origin.includes('.render.com');
+    
+    // Check if origin is in allowed list or is from an allowed platform
+    if (allowedOrigins.includes(origin) || isVercelDomain || isAllowedPlatform) {
+      console.log(`✅ CORS allowed: ${origin}`);
       return callback(null, true);
     }
 
     console.log('⚠️  CORS blocked origin:', origin);
     console.log('📋 Allowed origins:', allowedOrigins);
+    console.log('💡 Tip: Add origin to CORS_ORIGIN env variable or it must be from .vercel.app domain');
     return callback(new Error('Not allowed by CORS'), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
   exposedHeaders: ['Set-Cookie'],
+  maxAge: 86400, // 24 hours
 };
 
 const corsOptions = process.env.NODE_ENV === 'production' ? prodCorsOptions : devCorsOptions;
