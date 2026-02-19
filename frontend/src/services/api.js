@@ -11,11 +11,15 @@ const getApiBaseURL = () => {
   const apiUrl = import.meta.env.VITE_API_URL;
   if (apiUrl) {
     // Ensure it ends with /api if not already
-    return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+    console.log('🌐 Using API URL:', baseUrl);
+    return baseUrl;
   }
   
   // Fallback (should not be used in production)
-  console.warn('VITE_API_URL not set. Using localhost fallback.');
+  console.error('❌ VITE_API_URL not set in production! Products will not load.');
+  console.error('Please set VITE_API_URL environment variable in Vercel settings.');
+  // Still return localhost for now, but log the error
   return 'http://localhost:5002/api';
 };
 
@@ -46,6 +50,18 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log detailed error information for debugging
+    if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+      console.error('❌ Network Error: Cannot connect to backend API');
+      console.error('API Base URL:', api.defaults.baseURL);
+      console.error('Make sure VITE_API_URL is set correctly in Vercel environment variables');
+    } else if (error.response) {
+      console.error('❌ API Error:', error.response.status, error.response.statusText);
+      console.error('Response:', error.response.data);
+    } else {
+      console.error('❌ Request Error:', error.message);
+    }
+    
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('authToken');

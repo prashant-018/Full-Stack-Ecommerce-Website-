@@ -73,9 +73,20 @@ const Women = () => {
           console.log(`Loaded ${womenProducts.length} women's products out of ${normalized.length} total products`);
         }
       } catch (err) {
-        console.error('Failed to load women products', err);
+        console.error('❌ Failed to load women products:', err);
+        console.error('Error details:', {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+          apiUrl: err.config?.url
+        });
         if (isMounted) {
-          setError('Failed to load products. Please try again.');
+          // More helpful error message
+          if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
+            setError('Cannot connect to server. Please check your internet connection and ensure the backend is running.');
+          } else {
+            setError(`Failed to load products: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+          }
         }
       } finally {
         if (isMounted) {
