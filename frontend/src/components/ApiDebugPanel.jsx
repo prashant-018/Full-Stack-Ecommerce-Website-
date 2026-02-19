@@ -4,8 +4,24 @@
  * Only visible in development or when VITE_DEBUG=true
  */
 import React, { useState, useEffect } from 'react';
-import { getApiDebugInfo } from '../config/api.config';
+import API_URL from '../config/api';
 import api from '../services/api';
+
+// Debug info helper
+const getApiDebugInfo = () => {
+  return {
+    isDev: import.meta.env.DEV,
+    viteApiUrl: import.meta.env.VITE_API_URL || 'NOT SET',
+    computedBaseUrl: API_URL,
+    mode: import.meta.env.MODE,
+    allEnvVars: {
+      DEV: import.meta.env.DEV,
+      MODE: import.meta.env.MODE,
+      PROD: import.meta.env.PROD,
+      VITE_API_URL: import.meta.env.VITE_API_URL || 'NOT SET'
+    }
+  };
+};
 
 const ApiDebugPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -153,4 +169,5 @@ const ApiDebugPanel = () => {
 };
 
 export default ApiDebugPanel;
+
 

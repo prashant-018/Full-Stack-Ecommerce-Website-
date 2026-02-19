@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Package, MapPin, CreditCard, Calendar, ArrowRight, Home } from 'lucide-react';
+import API_URL from '../config/api';
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -29,11 +30,8 @@ const OrderSuccess = () => {
         return;
       }
 
-      // Get API URL from environment or use default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
-      
-      const response = await fetch(`${apiBase}/orders/${orderId}`, {
+      // Use centralized API configuration
+      const response = await fetch(`${API_URL}/orders/${orderId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

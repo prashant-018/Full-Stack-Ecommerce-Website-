@@ -4,6 +4,7 @@ import ReviewForm from './ReviewForm';
 import ReviewsList from './ReviewsList';
 import ReviewsSummary from './ReviewsSummary';
 import './ProductReviews.css';
+import API_URL from '../config/api';
 
 const ProductReviews = ({ productId, productName }) => {
   const { user } = useContext(SessionContext);
@@ -34,7 +35,7 @@ const ProductReviews = ({ productId, productName }) => {
         params.append('rating', filterRating);
       }
 
-      const response = await fetch(`/api/reviews/${productId}?${params}`);
+      const response = await fetch(`${API_URL}/reviews/${productId}?${params}`);
       const data = await response.json();
 
       if (data.success) {

@@ -1,9 +1,12 @@
 // API utility functions with JWT token handling
+import API_URL from '../config/api';
 
-const rawBaseUrl = import.meta.env.VITE_API_URL;
-const API_BASE_URL = rawBaseUrl
-  ? rawBaseUrl.replace(/\/$/, '')
-  : 'http://localhost:5002/api';
+// API_URL already contains /api, so use it directly
+const API_BASE_URL = API_URL;
+
+// Debug logging
+console.log('🔧 Utils API - API_BASE_URL:', API_BASE_URL);
+console.log('✅ Using API_URL directly (already contains /api)');
 
 // Get auth token from localStorage
 const getAuthToken = () => {

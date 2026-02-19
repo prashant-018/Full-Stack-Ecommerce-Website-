@@ -1,4 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import API_URL from '../config/api';
+
+// Debug logging
+console.log('🔧 AuthContext - API_URL:', API_URL);
 
 const AuthContext = createContext();
 
@@ -43,11 +47,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Use environment variable for API URL (Vite uses import.meta.env)
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const loginUrl = `${API_URL}/api/auth/login`;
+      const loginUrl = `${API_URL}/auth/login`;
 
       console.log('🔐 Attempting login to:', loginUrl);
+      console.log('🔧 API_URL value:', API_URL);
+      console.log('✅ Final login URL:', loginUrl);
 
       const response = await fetch(loginUrl, {
         method: 'POST',
@@ -116,11 +120,11 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      // Use environment variable for API URL
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const registerUrl = `${API_URL}/api/auth/register`;
+      const registerUrl = `${API_URL}/auth/register`;
 
       console.log('📝 Attempting registration to:', registerUrl);
+      console.log('🔧 API_URL value:', API_URL);
+      console.log('✅ Final register URL:', registerUrl);
 
       const response = await fetch(registerUrl, {
         method: 'POST',

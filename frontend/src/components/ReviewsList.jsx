@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import StarRating from './StarRating';
 import './ReviewsList.css';
+import API_URL from '../config/api';
 
 const ReviewsList = ({ reviews, loading, pagination, onPageChange }) => {
   const [helpfulClicks, setHelpfulClicks] = useState({});
@@ -9,7 +10,7 @@ const ReviewsList = ({ reviews, loading, pagination, onPageChange }) => {
     if (helpfulClicks[reviewId]) return; // Prevent multiple clicks
 
     try {
-      const response = await fetch(`/api/reviews/${reviewId}/helpful`, {
+      const response = await fetch(`${API_URL}/reviews/${reviewId}/helpful`, {
         method: 'PUT',
         credentials: 'include'
       });

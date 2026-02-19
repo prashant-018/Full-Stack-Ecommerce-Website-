@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { SessionContext } from '../contexts/SessionContext';
 import StarRating from './StarRating';
 import './AdminReviews.css';
+import API_URL from '../config/api';
 
 const AdminReviews = () => {
   const { user } = useContext(SessionContext);
@@ -25,7 +26,7 @@ const AdminReviews = () => {
         status: statusFilter
       });
 
-      const response = await fetch(`/api/reviews/admin/all?${params}`, {
+      const response = await fetch(`${API_URL}/reviews/admin/all?${params}`, {
         headers: {
           'Authorization': `Bearer ${user.token}`
         },
@@ -53,7 +54,7 @@ const AdminReviews = () => {
     setDeleteLoading(prev => ({ ...prev, [reviewId]: true }));
 
     try {
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(`${API_URL}/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${user.token}`

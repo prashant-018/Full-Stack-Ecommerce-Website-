@@ -177,3 +177,4 @@ After setting `VITE_API_URL` and redeploying:
 3. You should see: `🌐 Using API URL: https://your-backend.com/api`
 4. If you see `❌ VITE_API_URL not set`, the environment variable is not configured correctly
 
+

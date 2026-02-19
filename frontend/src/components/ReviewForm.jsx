@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { SessionContext } from '../contexts/SessionContext';
 import StarRating from './StarRating';
 import './ReviewForm.css';
+import API_URL from '../config/api';
 
 const ReviewForm = ({ productId, productName, onClose, onReviewSubmitted }) => {
   const { user } = useContext(SessionContext);
@@ -81,7 +82,7 @@ const ReviewForm = ({ productId, productName, onClose, onReviewSubmitted }) => {
     setSubmitting(true);
 
     try {
-      const response = await fetch('/api/reviews', {
+      const response = await fetch(`${API_URL}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

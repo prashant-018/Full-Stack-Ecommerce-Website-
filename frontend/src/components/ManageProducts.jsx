@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Edit, Trash2, Eye, Search, Plus, X, AlertTriangle, Package } from 'lucide-react';
 import { convertAndFormatPrice } from '../utils/currency';
 import { productsApi } from '../utils/api';
+import API_URL from '../config/api';
 
 const ManageProducts = () => {
   const navigate = useNavigate();
@@ -141,11 +142,7 @@ const ManageProducts = () => {
         return;
       }
 
-      // Get API URL from environment or use default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
-      
-      const response = await fetch(`${apiBase}/products/${selectedProduct._id}`, {
+      const response = await fetch(`${API_URL}/products/${selectedProduct._id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

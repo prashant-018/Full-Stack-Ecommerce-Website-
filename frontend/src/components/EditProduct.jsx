@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Plus, X } from 'lucide-react';
+import API_URL from '../config/api';
 
 const EditProduct = () => {
   const navigate = useNavigate();
@@ -74,11 +75,8 @@ const EditProduct = () => {
         return;
       }
 
-      // Get API URL from environment or use default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
-      
-      const response = await fetch(`${apiBase}/products/${id}`, {
+      // Use centralized API configuration
+      const response = await fetch(`${API_URL}/products/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -199,11 +197,8 @@ const EditProduct = () => {
 
       console.log('Updating product:', productData);
 
-      // Get API URL from environment or use default
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
-      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
-      
-      const response = await fetch(`${apiBase}/products/${id}`, {
+      // Use centralized API configuration
+      const response = await fetch(`${API_URL}/products/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

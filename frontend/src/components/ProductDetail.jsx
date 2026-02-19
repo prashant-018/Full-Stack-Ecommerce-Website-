@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Star, MapPin, Heart, Share2, ChevronDown, ChevronUp, Shield, Truck } from 'lucide-react';
 import ProductReviews from './ProductReviews';
+import API_URL from '../config/api';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -29,7 +30,7 @@ const ProductDetail = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(`${API_URL}/products/${id}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });

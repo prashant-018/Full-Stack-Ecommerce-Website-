@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, X, Plus, AlertCircle } from 'lucide-react';
+import API_URL from '../config/api';
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -228,7 +229,7 @@ const AddProduct = () => {
 
       console.log('Submitting product:', productData);
 
-      const response = await fetch('/api/products', {
+      const response = await fetch(`${API_URL}/products`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
