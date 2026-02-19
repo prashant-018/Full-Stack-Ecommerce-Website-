@@ -25,9 +25,19 @@ const Men = () => {
         setLoading(true);
         setError('');
 
+        console.log('🔍 Starting to fetch men products...');
+        
         const response = await fetchProductsBySection('men', {
           page: 1,
           limit: 100 // Get more products to ensure we have enough men's products
+        });
+
+        console.log('📦 Raw API response:', response);
+        console.log('📦 Response structure:', {
+          hasData: !!response?.data,
+          hasProducts: !!response?.products,
+          isArray: Array.isArray(response),
+          dataKeys: response ? Object.keys(response) : []
         });
 
         // Extract products from the API response structure
@@ -35,6 +45,11 @@ const Men = () => {
           response?.data?.products ||
           response?.products ||
           (Array.isArray(response) ? response : []);
+
+        console.log('📦 Extracted products:', {
+          count: apiProducts.length,
+          firstProduct: apiProducts[0] || null
+        });
 
         const normalized = apiProducts.map((p) => {
           // Get primary image or first available image
@@ -87,11 +102,21 @@ const Men = () => {
         
         if (isMounted) {
           // Use enhanced error message from API interceptor
-          const errorMessage = err.userMessage || 
-            (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')
-              ? 'Cannot connect to server. Please check your internet connection and ensure the backend is running.'
-              : `Failed to load products: ${err.response?.data?.message || err.message || 'Unknown error'}`);
+          let errorMessage = err.userMessage;
           
+          if (!errorMessage) {
+            if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error') || err.message?.includes('Failed to fetch')) {
+              errorMessage = 'Cannot connect to server. Please check your internet connection and ensure the backend is running.';
+            } else if (err.response?.status === 404) {
+              errorMessage = 'Products endpoint not found. Please check the API configuration.';
+            } else if (err.response?.status >= 500) {
+              errorMessage = 'Server error. Please try again later.';
+            } else {
+              errorMessage = `Failed to load products: ${err.response?.data?.message || err.message || 'Unknown error'}`;
+            }
+          }
+          
+          console.error('📋 Setting error message:', errorMessage);
           setError(errorMessage);
         }
       } finally {

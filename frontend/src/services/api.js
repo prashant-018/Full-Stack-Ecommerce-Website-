@@ -91,14 +91,46 @@ api.interceptors.response.use(
 
 // Export API functions
 export const fetchProductsBySection = async (section, params = {}) => {
-  const queryParams = new URLSearchParams({
-    section: section.toLowerCase(),
-    ...Object.fromEntries(
-      Object.entries(params).map(([k, v]) => [k, String(v)])
-    )
-  });
-  const response = await api.get(`/products?${queryParams}`);
-  return response.data;
+  try {
+    const queryParams = new URLSearchParams({
+      section: section.toLowerCase(),
+      ...Object.fromEntries(
+        Object.entries(params).map(([k, v]) => [k, String(v)])
+      )
+    });
+    
+    const url = `/products?${queryParams}`;
+    const fullUrl = `${api.defaults.baseURL}${url}`;
+    
+    console.log('🔍 Fetching products:', {
+      section,
+      url,
+      baseURL: api.defaults.baseURL,
+      fullURL: fullUrl,
+      environment: import.meta.env.MODE
+    });
+    
+    const response = await api.get(url);
+    
+    console.log('✅ Products fetched successfully:', {
+      status: response.status,
+      dataKeys: Object.keys(response.data || {}),
+      productsCount: response.data?.data?.products?.length || response.data?.products?.length || 0
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ fetchProductsBySection error:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      baseURL: api.defaults.baseURL,
+      url: error.config?.url,
+      fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'N/A',
+      responseData: error.response?.data
+    });
+    throw error;
+  }
 };
 
 export const fetchProductById = async (productId) => {

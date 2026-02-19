@@ -36,12 +36,17 @@ const getApiBaseUrl = () => {
   // Log for debugging
   console.log('🌐 API_URL Configuration:');
   console.log('  - Environment:', import.meta.env.MODE);
+  console.log('  - Is Production:', import.meta.env.PROD);
+  console.log('  - Is Development:', import.meta.env.DEV);
   console.log('  - VITE_API_URL from env:', envUrl || 'NOT SET (using fallback)');
+  console.log('  - Base URL:', baseUrl);
   console.log('  - Final API_URL:', url);
   
   if (!envUrl && import.meta.env.PROD) {
-    console.warn('⚠️  VITE_API_URL not set in production! Using fallback.');
-    console.warn('📋 Set VITE_API_URL in Vercel Dashboard → Settings → Environment Variables');
+    console.error('❌ CRITICAL: VITE_API_URL not set in production!');
+    console.error('📋 Set VITE_API_URL in Vercel Dashboard → Settings → Environment Variables');
+    console.error('   Value should be: https://full-stack-ecommerce-website-2-8vaf.onrender.com');
+    console.warn('⚠️  Using fallback URL:', url);
   }
   
   return url;

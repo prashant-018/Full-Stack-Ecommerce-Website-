@@ -25,9 +25,19 @@ const Women = () => {
         setLoading(true);
         setError('');
 
+        console.log('🔍 Starting to fetch women products...');
+        
         const response = await fetchProductsBySection('women', {
           page: 1,
           limit: 100 // Get more products to ensure we have enough women's products
+        });
+
+        console.log('📦 Raw API response:', response);
+        console.log('📦 Response structure:', {
+          hasData: !!response?.data,
+          hasProducts: !!response?.products,
+          isArray: Array.isArray(response),
+          dataKeys: response ? Object.keys(response) : []
         });
 
         // Extract products from the API response structure
@@ -35,6 +45,11 @@ const Women = () => {
           response?.data?.products ||
           response?.products ||
           (Array.isArray(response) ? response : []);
+
+        console.log('📦 Extracted products:', {
+          count: apiProducts.length,
+          firstProduct: apiProducts[0] || null
+        });
 
         const normalized = apiProducts.map((p) => {
           // Get primary image or first available image
