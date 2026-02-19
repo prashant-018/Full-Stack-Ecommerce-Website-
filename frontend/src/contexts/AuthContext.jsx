@@ -43,17 +43,32 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const response = await fetch('http://localhost:5002/api/auth/login', {
+      // Use environment variable for API URL (Vite uses import.meta.env)
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+      const loginUrl = `${API_URL}/api/auth/login`;
+
+      console.log('🔐 Attempting login to:', loginUrl);
+
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for cookies/CORS
         body: JSON.stringify({ email, password })
       });
 
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          message: `HTTP error! status: ${response.status}`
+        }));
+        throw new Error(errorData.message || 'Login request failed');
+      }
+
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (data.success) {
         const userData = data.data.user;
 
         // Check role-based access
@@ -75,13 +90,23 @@ export const AuthProvider = ({ children }) => {
         setUser(userData);
         setIsAuthenticated(true);
 
+        console.log('✅ Login successful:', userData.email);
         return { success: true, user: userData };
       } else {
         throw new Error(data.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
+      console.error('❌ Login error:', error);
+      
+      // Handle network errors specifically
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        return { 
+          success: false, 
+          error: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' 
+        };
+      }
+      
+      return { success: false, error: error.message || 'Login failed' };
     } finally {
       setLoading(false);
     }
@@ -91,17 +116,32 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const response = await fetch('http://localhost:5002/api/auth/register', {
+      // Use environment variable for API URL
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+      const registerUrl = `${API_URL}/api/auth/register`;
+
+      console.log('📝 Attempting registration to:', registerUrl);
+
+      const response = await fetch(registerUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Important for cookies/CORS
         body: JSON.stringify({ ...userData, role: 'user' })
       });
 
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          message: `HTTP error! status: ${response.status}`
+        }));
+        throw new Error(errorData.message || 'Registration request failed');
+      }
+
       const data = await response.json();
 
-      if (response.ok && data.success) {
+      if (data.success) {
         const newUser = data.data.user;
 
         // Store auth data
@@ -113,13 +153,23 @@ export const AuthProvider = ({ children }) => {
         setUser(newUser);
         setIsAuthenticated(true);
 
+        console.log('✅ Registration successful:', newUser.email);
         return { success: true, user: newUser };
       } else {
         throw new Error(data.message || 'Registration failed');
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, error: error.message };
+      console.error('❌ Registration error:', error);
+      
+      // Handle network errors specifically
+      if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
+        return { 
+          success: false, 
+          error: 'Cannot connect to server. Please check if the backend is running and the API URL is correct.' 
+        };
+      }
+      
+      return { success: false, error: error.message || 'Registration failed' };
     } finally {
       setLoading(false);
     }

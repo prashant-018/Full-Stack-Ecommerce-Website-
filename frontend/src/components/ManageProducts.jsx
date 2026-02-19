@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Edit, Trash2, Eye, Search, Plus, X, AlertTriangle, Package } from 'lucide-react';
 import { convertAndFormatPrice } from '../utils/currency';
+import { productsApi } from '../utils/api';
 
 const ManageProducts = () => {
   const navigate = useNavigate();
@@ -35,28 +36,9 @@ const ManageProducts = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5002/api/products', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Products fetched:', data);
-        setProducts(data.data?.products || data.products || []);
-      } else if (response.status === 401) {
-        console.error('Authentication failed');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userRole');
-        navigate('/login');
-      } else {
-        console.error('Failed to fetch products');
-        // For now, use mock data if API fails
-        setProducts(getMockProducts());
-      }
+      const data = await productsApi.getAll(navigate);
+      console.log('Products fetched:', data);
+      setProducts(data.data?.products || data.products || []);
     } catch (error) {
       console.error('Error fetching products:', error);
       // Use mock data as fallback
@@ -131,30 +113,12 @@ const ManageProducts = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5002/api/products/${productId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (response.ok) {
-        // Remove product from UI immediately
-        setProducts(prevProducts => prevProducts.filter(p => p._id !== productId));
-        showToast(`"${product.name}" deleted successfully`, 'success');
-      } else if (response.status === 401) {
-        showToast('Authentication failed. Please login again.', 'error');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userRole');
-        navigate('/login');
-      } else {
-        const errorData = await response.json();
-        showToast(errorData.message || 'Failed to delete product', 'error');
-      }
+      await productsApi.delete(productId, navigate);
+      setProducts(prevProducts => prevProducts.filter(p => p._id !== productId));
+      showToast(`"${product.name}" deleted successfully`, 'success');
     } catch (error) {
       console.error('Error deleting product:', error);
-      showToast('Network error. Please try again.', 'error');
+      showToast(error.message || 'Server error while deleting product', 'error');
     } finally {
       // Remove product from deleting set
       setDeletingProducts(prev => {

@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
   slug: {
     type: String,
     unique: true,
+    index: true,
     // Not marked required here to avoid breaking existing data on load;
     // pre-save hook will ensure new/updated products always get a slug.
   },
@@ -166,6 +167,8 @@ productSchema.index({ 'rating.average': -1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ isNewArrival: 1 });
 productSchema.index({ isFeatured: 1 });
+// Slug index (unique for SEO URLs). Sparse allows legacy docs without slug.
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
 
 // Virtual for total stock across all sizes
 productSchema.virtual('totalStock').get(function () {

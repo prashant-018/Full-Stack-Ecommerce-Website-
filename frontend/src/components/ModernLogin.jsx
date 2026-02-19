@@ -338,6 +338,7 @@ const ModernLogin = () => {
                       : 'border-gray-200 hover:border-gray-300'
                       }`}
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     required
                   />
                   <button

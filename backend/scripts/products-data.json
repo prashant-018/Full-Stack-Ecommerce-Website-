@@ -1,0 +1,249 @@
+[
+  {
+    "name": "Classic Cotton T-Shirt",
+    "description": "Premium quality cotton t-shirt with a comfortable fit. Perfect for everyday wear, this classic piece features a modern design and durable construction. Made from 100% organic cotton for ultimate comfort.",
+    "price": 29.99,
+    "originalPrice": 39.99,
+    "category": "Men's T-Shirts",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-TS-001",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/736x/bf/50/35/bf5035d63ffb5ae60d6dd709bc16a1aa.jpg",
+        "alt": "Classic Cotton T-Shirt",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "S", "stock": 25 },
+      { "size": "M", "stock": 30 },
+      { "size": "L", "stock": 28 },
+      { "size": "XL", "stock": 20 }
+    ],
+    "colors": [
+      { "name": "Navy Blue", "hex": "#1a237e" },
+      { "name": "Charcoal Gray", "hex": "#424242" }
+    ],
+    "material": "100% Organic Cotton",
+    "fit": "Regular",
+    "care": ["Machine wash cold", "Tumble dry low", "Do not bleach"],
+    "features": ["Breathable", "Soft fabric", "Tagless design"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Slim Fit Denim Jeans",
+    "description": "Stylish slim-fit denim jeans crafted from premium denim fabric. Features a modern cut with stretch for comfort and mobility. Perfect for casual and semi-formal occasions.",
+    "price": 79.99,
+    "originalPrice": 99.99,
+    "category": "Men's Jeans",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-JN-002",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/736x/28/8a/63/288a638a733673831347ef605ad6b1a6.jpg",
+        "alt": "Slim Fit Denim Jeans",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "30", "stock": 15 },
+      { "size": "32", "stock": 20 },
+      { "size": "34", "stock": 18 },
+      { "size": "36", "stock": 12 }
+    ],
+    "colors": [
+      { "name": "Dark Blue", "hex": "#1565c0" },
+      { "name": "Medium Blue", "hex": "#42a5f5" }
+    ],
+    "material": "98% Cotton, 2% Elastane",
+    "fit": "Slim",
+    "care": ["Machine wash cold", "Hang dry", "Iron on low heat"],
+    "features": ["Stretch fabric", "Five-pocket design", "Reinforced seams"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Casual Button-Down Shirt",
+    "description": "Versatile button-down shirt perfect for both casual and business casual settings. Made from high-quality cotton blend with a comfortable fit and wrinkle-resistant fabric.",
+    "price": 49.99,
+    "originalPrice": 64.99,
+    "category": "Men's Shirts",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-SH-003",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/1200x/89/32/61/89326117f8a4093c4a4b38f0f7189f4d.jpg",
+        "alt": "Casual Button-Down Shirt",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "S", "stock": 22 },
+      { "size": "M", "stock": 28 },
+      { "size": "L", "stock": 25 },
+      { "size": "XL", "stock": 18 },
+      { "size": "XXL", "stock": 10 }
+    ],
+    "colors": [
+      { "name": "White", "hex": "#ffffff" },
+      { "name": "Light Blue", "hex": "#e3f2fd" },
+      { "name": "Navy", "hex": "#0d47a1" }
+    ],
+    "material": "60% Cotton, 40% Polyester",
+    "fit": "Regular",
+    "care": ["Machine wash warm", "Tumble dry medium", "Iron if needed"],
+    "features": ["Wrinkle-resistant", "Button-down collar", "Classic fit"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Athletic Performance Shorts",
+    "description": "High-performance athletic shorts designed for active lifestyles. Features moisture-wicking technology and breathable fabric to keep you cool and comfortable during workouts.",
+    "price": 34.99,
+    "originalPrice": 44.99,
+    "category": "Men's Shorts",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-ST-004",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/736x/8c/a7/36/8ca736c0d8fa8b924b4a83123bbb5385.jpg",
+        "alt": "Athletic Performance Shorts",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "S", "stock": 20 },
+      { "size": "M", "stock": 25 },
+      { "size": "L", "stock": 22 },
+      { "size": "XL", "stock": 15 }
+    ],
+    "colors": [
+      { "name": "Black", "hex": "#000000" },
+      { "name": "Navy", "hex": "#1a237e" },
+      { "name": "Gray", "hex": "#757575" }
+    ],
+    "material": "Polyester with moisture-wicking technology",
+    "fit": "Regular",
+    "care": ["Machine wash cold", "Hang dry", "Do not bleach"],
+    "features": ["Moisture-wicking", "Elastic waistband", "Side pockets"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Premium Hooded Sweatshirt",
+    "description": "Cozy and comfortable hooded sweatshirt perfect for casual wear. Made from soft fleece material with a relaxed fit. Features a drawstring hood and front kangaroo pocket.",
+    "price": 59.99,
+    "originalPrice": 79.99,
+    "category": "Men's Sweaters",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-SW-005",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/1200x/24/c2/7e/24c27e8d9c33702176e6bbfb31d6c681.jpg",
+        "alt": "Premium Hooded Sweatshirt",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "S", "stock": 18 },
+      { "size": "M", "stock": 24 },
+      { "size": "L", "stock": 26 },
+      { "size": "XL", "stock": 20 },
+      { "size": "XXL", "stock": 12 }
+    ],
+    "colors": [
+      { "name": "Charcoal", "hex": "#424242" },
+      { "name": "Navy", "hex": "#1a237e" },
+      { "name": "Olive Green", "hex": "#558b2f" }
+    ],
+    "material": "80% Cotton, 20% Polyester",
+    "fit": "Relaxed",
+    "care": ["Machine wash cold", "Tumble dry low", "Do not bleach"],
+    "features": ["Drawstring hood", "Kangaroo pocket", "Ribbed cuffs"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Classic Chino Pants",
+    "description": "Versatile chino pants that bridge the gap between casual and formal. Made from premium cotton twill with a modern slim fit. Perfect for office or weekend wear.",
+    "price": 69.99,
+    "originalPrice": 89.99,
+    "category": "Men's Pants",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-PT-006",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/736x/7b/68/52/7b6852f6bc21e92e94434c08763fb01f.jpg",
+        "alt": "Classic Chino Pants",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "30", "stock": 16 },
+      { "size": "32", "stock": 22 },
+      { "size": "34", "stock": 20 },
+      { "size": "36", "stock": 14 },
+      { "size": "38", "stock": 10 }
+    ],
+    "colors": [
+      { "name": "Khaki", "hex": "#c3b091" },
+      { "name": "Navy", "hex": "#1a237e" },
+      { "name": "Olive", "hex": "#558b2f" }
+    ],
+    "material": "98% Cotton, 2% Elastane",
+    "fit": "Slim",
+    "care": ["Machine wash cold", "Hang dry", "Iron on medium heat"],
+    "features": ["Flat front", "Belt loops", "Tapered leg"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  },
+  {
+    "name": "Lightweight Bomber Jacket",
+    "description": "Stylish lightweight bomber jacket perfect for transitional weather. Features a modern design with ribbed cuffs and hem. Made from durable nylon with a soft lining.",
+    "price": 89.99,
+    "originalPrice": 119.99,
+    "category": "Men's Jackets",
+    "section": "men",
+    "brand": "Fashion Brand",
+    "sku": "FB-JK-007",
+    "images": [
+      {
+        "url": "https://i.pinimg.com/736x/46/6b/8c/466b8c07297d9c42e595296d14bb70bb.jpg",
+        "alt": "Lightweight Bomber Jacket",
+        "isPrimary": true
+      }
+    ],
+    "sizes": [
+      { "size": "S", "stock": 12 },
+      { "size": "M", "stock": 18 },
+      { "size": "L", "stock": 16 },
+      { "size": "XL", "stock": 14 }
+    ],
+    "colors": [
+      { "name": "Black", "hex": "#000000" },
+      { "name": "Navy", "hex": "#1a237e" },
+      { "name": "Olive", "hex": "#558b2f" }
+    ],
+    "material": "100% Nylon with Polyester lining",
+    "fit": "Regular",
+    "care": ["Machine wash cold", "Hang dry", "Do not iron"],
+    "features": ["Ribbed cuffs", "Zipper closure", "Side pockets"],
+    "isActive": true,
+    "isFeatured": false,
+    "isNewArrival": false
+  }
+]
+

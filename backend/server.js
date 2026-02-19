@@ -55,15 +55,21 @@ app.use(limiter);
 const devCorsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, Postman) or any localhost origin
-    if (!origin || origin.startsWith('http://localhost') || origin.startsWith('http://127.0.0.1')) {
+    // Explicitly allow Vite dev server on port 5173
+    if (!origin || 
+        origin.startsWith('http://localhost') || 
+        origin.startsWith('http://127.0.0.1') ||
+        origin.includes('localhost:5173') ||
+        origin.includes('127.0.0.1:5173')) {
       return callback(null, true);
     }
-    console.log('CORS blocked origin:', origin);
+    console.log('⚠️  CORS blocked origin:', origin);
     return callback(new Error('Not allowed by CORS'), false);
   },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true, // Required for cookies and auth headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Set-Cookie'],
 };
 
 const prodCorsOptions = {

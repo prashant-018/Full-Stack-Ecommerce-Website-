@@ -4,6 +4,7 @@ const { body, query, validationResult } = require('express-validator');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const { admin } = require('../middleware/admin');
+const { deleteProduct } = require('../controllers/productController');
 
 const router = express.Router();
 
@@ -661,32 +662,6 @@ router.put('/:id', [auth, admin], async (req, res) => {
 // @route   DELETE /api/products/:id
 // @desc    Delete product (Admin only)
 // @access  Private/Admin
-router.delete('/:id', [auth, admin], async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
-    }
-
-    // Soft delete by setting isActive to false
-    product.isActive = false;
-    await product.save();
-
-    res.json({
-      success: true,
-      message: 'Product deleted successfully'
-    });
-
-  } catch (error) {
-    console.error('Delete product error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while deleting product'
-    });
-  }
-});
+router.delete('/:id', [auth, admin], deleteProduct);
 
 module.exports = router;

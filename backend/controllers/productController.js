@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const productService = require('../services/productService');
 const Category = require('../models/Category');
@@ -128,23 +129,75 @@ const updateProduct = async (req, res) => {
 // @access  Private/Admin
 const deleteProduct = async (req, res) => {
   try {
-    const product = await productService.softDeleteProduct(req.params.id);
+    const { id } = req.params;
 
-    if (!product) {
+    console.log('🗑️  DELETE /api/products/:id - request received', {
+      id,
+      userId: req.user?.userId || req.user?.id,
+      role: req.user?.role,
+    });
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Product ID is required'
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product id'
+      });
+    }
+
+    // IMPORTANT: Use deleteOne() (hard delete) to avoid validation errors that can occur
+    // when saving legacy/invalid documents during a soft delete.
+    const existing = await Product.findById(id).select('_id').lean();
+    if (!existing) {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
       });
     }
 
-    res.json({
+    const result = await Product.deleteOne({ _id: id });
+
+    if (!result || result.deletedCount !== 1) {
+      console.error('❌ Product deleteOne did not delete a document', {
+        id,
+        result,
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Server error while deleting product'
+      });
+    }
+
+    return res.status(200).json({
       success: true,
       message: 'Product deleted successfully'
     });
 
   } catch (error) {
-    console.error('Delete product error:', error);
-    res.status(500).json({
+    console.error('❌ Delete product error:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      stack: error.stack,
+      id: req.params?.id,
+      userId: req.user?.userId || req.user?.id,
+      role: req.user?.role,
+    });
+
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid product id'
+      });
+    }
+
+    return res.status(500).json({
       success: false,
       message: 'Server error while deleting product'
     });
