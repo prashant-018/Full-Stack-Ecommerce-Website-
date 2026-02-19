@@ -1,6 +1,13 @@
 import axios from 'axios';
 import API_URL from '../config/api';
 
+// CRITICAL: Verify API_URL is not localhost in production
+if (import.meta.env.PROD && (API_URL.includes('localhost') || API_URL.includes('127.0.0.1'))) {
+  console.error('❌ CRITICAL ERROR: API_URL contains localhost in production!');
+  console.error('Current API_URL:', API_URL);
+  throw new Error('API_URL cannot be localhost in production. Set VITE_API_URL in Vercel.');
+}
+
 // Create axios instance with production configuration
 // API_URL already contains /api, so use it directly
 const api = axios.create({
@@ -13,7 +20,15 @@ const api = axios.create({
 
 // Debug logging
 console.log('🔧 API Service - baseURL:', api.defaults.baseURL);
+console.log('🔧 API Service - Full URL example:', `${api.defaults.baseURL}/products`);
 console.log('✅ Using API_URL directly (already contains /api)');
+
+// Verify baseURL is correct
+if (api.defaults.baseURL.includes('localhost') && window.location.hostname !== 'localhost') {
+  console.error('❌ ERROR: Axios baseURL is localhost but we are not on localhost!');
+  console.error('Hostname:', window.location.hostname);
+  console.error('baseURL:', api.defaults.baseURL);
+}
 
 // Request interceptor - Add auth token
 api.interceptors.request.use(
@@ -107,15 +122,31 @@ export const fetchProductsBySection = async (section, params = {}) => {
       url,
       baseURL: api.defaults.baseURL,
       fullURL: fullUrl,
-      environment: import.meta.env.MODE
+      environment: import.meta.env.MODE,
+      queryString: queryParams.toString()
     });
+    
+    // First, test if backend is reachable
+    try {
+      const healthCheck = await api.get('/health');
+      console.log('✅ Backend health check passed:', healthCheck.data);
+    } catch (healthError) {
+      console.warn('⚠️  Health check failed, but continuing with product fetch:', healthError.message);
+    }
     
     const response = await api.get(url);
     
     console.log('✅ Products fetched successfully:', {
       status: response.status,
       dataKeys: Object.keys(response.data || {}),
-      productsCount: response.data?.data?.products?.length || response.data?.products?.length || 0
+      hasData: !!response.data?.data,
+      hasProducts: !!response.data?.products,
+      productsCount: response.data?.data?.products?.length || response.data?.products?.length || 0,
+      responseStructure: {
+        success: response.data?.success,
+        hasDataObject: !!response.data?.data,
+        hasProductsArray: Array.isArray(response.data?.data?.products) || Array.isArray(response.data?.products)
+      }
     });
     
     return response.data;
@@ -123,12 +154,22 @@ export const fetchProductsBySection = async (section, params = {}) => {
     console.error('❌ fetchProductsBySection error:', {
       message: error.message,
       code: error.code,
+      name: error.name,
       status: error.response?.status,
+      statusText: error.response?.statusText,
       baseURL: api.defaults.baseURL,
       url: error.config?.url,
       fullURL: error.config ? `${error.config.baseURL}${error.config.url}` : 'N/A',
-      responseData: error.response?.data
+      responseData: error.response?.data,
+      responseHeaders: error.response?.headers
     });
+    
+    // More specific error handling
+    if (error.response?.status === 404) {
+      console.error('❌ 404 Error - Route not found. Check if backend route exists.');
+      console.error('Expected route:', `${api.defaults.baseURL}/products?section=${section}`);
+    }
+    
     throw error;
   }
 };
