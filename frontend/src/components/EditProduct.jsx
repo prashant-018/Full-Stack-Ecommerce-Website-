@@ -74,7 +74,11 @@ const EditProduct = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5002/api/products/${id}`, {
+      // Get API URL from environment or use default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+      
+      const response = await fetch(`${apiBase}/products/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +199,11 @@ const EditProduct = () => {
 
       console.log('Updating product:', productData);
 
-      const response = await fetch(`http://localhost:5002/api/products/${id}`, {
+      // Get API URL from environment or use default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+      
+      const response = await fetch(`${apiBase}/products/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

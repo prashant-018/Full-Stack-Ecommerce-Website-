@@ -141,7 +141,11 @@ const ManageProducts = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5002/api/products/${selectedProduct._id}`, {
+      // Get API URL from environment or use default
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+      const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+      
+      const response = await fetch(`${apiBase}/products/${selectedProduct._id}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

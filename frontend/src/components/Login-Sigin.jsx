@@ -88,8 +88,12 @@ const LoginSignin = () => {
 
         console.log('Attempting login with:', { email: loginData.email });
 
+        // Get API URL from environment or use default
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+        const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+        
         // Call the real backend API
-        const response = await fetch('http://localhost:5002/api/auth/login', {
+        const response = await fetch(`${apiBase}/auth/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,7 +157,11 @@ const LoginSignin = () => {
 
         console.log('Attempting signup with:', { email: signupData.email, name: signupData.name });
 
-        const response = await fetch('http://localhost:5002/api/auth/register', {
+        // Get API URL from environment or use default
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5002';
+        const apiBase = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+        
+        const response = await fetch(`${apiBase}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

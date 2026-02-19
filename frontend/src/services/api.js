@@ -1,8 +1,27 @@
 import axios from 'axios';
 
+// Get API base URL from environment variable or use defaults
+const getApiBaseURL = () => {
+  // In development with Vite proxy, use relative path
+  if (import.meta.env.DEV) {
+    return '/api';
+  }
+  
+  // In production, use environment variable or fallback
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    // Ensure it ends with /api if not already
+    return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
+  }
+  
+  // Fallback (should not be used in production)
+  console.warn('VITE_API_URL not set. Using localhost fallback.');
+  return 'http://localhost:5002/api';
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.DEV ? '/api' : 'http://localhost:5002/api',
+  baseURL: getApiBaseURL(),
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
