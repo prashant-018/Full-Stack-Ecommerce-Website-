@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Package, MapPin, CreditCard, Calendar, ArrowRight, Home } from 'lucide-react';
-import API_URL from '../config/api';
+import { getUserOrders } from '../services/api';
 
 const OrderSuccess = () => {
   const { orderId } = useParams();
@@ -17,6 +17,7 @@ const OrderSuccess = () => {
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
+      setError(null);
 
       // Get auth token from localStorage
       const token = localStorage.getItem('authToken');
@@ -30,31 +31,32 @@ const OrderSuccess = () => {
         return;
       }
 
-      // Use centralized API configuration
-      const response = await fetch(`${API_URL}/orders/${orderId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        credentials: 'include',
+      // Fetch all orders for the logged-in user and find the current one
+      const response = await getUserOrders();
+
+      console.log('📦 Order fetch response:', {
+        status: 200,
+        ok: response.success
       });
+      console.log('📦 Order data:', response);
 
-      console.log('📦 Order fetch response:', { status: response.status, ok: response.ok });
+      if (response.success && Array.isArray(response.data?.orders)) {
+        const foundOrder = response.data.orders.find((o) => o._id === orderId);
 
-      const data = await response.json();
-      console.log('📦 Order data:', data);
-
-      if (response.ok && data.success) {
-        console.log('✅ Order loaded successfully');
-        setOrder(data.order);
+        if (foundOrder) {
+          console.log('✅ Order loaded successfully');
+          setOrder(foundOrder);
+        } else {
+          console.error('❌ Order fetch failed: Order not found in user orders');
+          setError('Order not found');
+        }
       } else {
-        console.error('❌ Order fetch failed:', data.message);
-        setError(data.message || 'Order not found');
+        console.error('❌ Order fetch failed:', response.message);
+        setError(response.message || 'Failed to load order details');
       }
     } catch (err) {
       console.error('❌ Error fetching order:', err);
-      setError('Failed to load order details');
+      setError(err.response?.data?.message || 'Failed to load order details');
     } finally {
       setLoading(false);
     }
