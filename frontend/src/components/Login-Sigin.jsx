@@ -88,7 +88,7 @@ const LoginSignin = () => {
         };
 
         console.log('Attempting login with:', { email: loginData.email });
-        
+
         // Call the real backend API
         const response = await fetch(`${API_URL}/auth/login`, {
           method: 'POST',

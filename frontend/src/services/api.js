@@ -58,11 +58,11 @@ api.interceptors.response.use(
   (error) => {
     // Enhanced error logging for production debugging
     const errorDetails = {
-      url: error.config?.url,
-      baseURL: error.config?.baseURL,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
       fullURL: error.config?.url ? `${error.config.baseURL}${error.config.url}` : 'N/A',
-      status: error.response?.status,
-      message: error.message,
+        status: error.response?.status,
+        message: error.message,
       code: error.code,
       responseData: error.response?.data
     };
@@ -107,12 +107,12 @@ api.interceptors.response.use(
 // Export API functions
 export const fetchProductsBySection = async (section, params = {}) => {
   try {
-    const queryParams = new URLSearchParams({
-      section: section.toLowerCase(),
-      ...Object.fromEntries(
-        Object.entries(params).map(([k, v]) => [k, String(v)])
-      )
-    });
+  const queryParams = new URLSearchParams({
+    section: section.toLowerCase(),
+    ...Object.fromEntries(
+      Object.entries(params).map(([k, v]) => [k, String(v)])
+    )
+  });
     
     const url = `/products?${queryParams}`;
     const fullUrl = `${api.defaults.baseURL}${url}`;
@@ -149,7 +149,7 @@ export const fetchProductsBySection = async (section, params = {}) => {
       }
     });
     
-    return response.data;
+  return response.data;
   } catch (error) {
     console.error('❌ fetchProductsBySection error:', {
       message: error.message,
