@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 export default function Hero({
   src = "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?q=80&w=1920&auto=format&fit=crop",
@@ -19,9 +20,12 @@ export default function Hero({
             <br />
             with new winter essentials.
           </p>
-          <button className="inline-block bg-white text-gray-900 px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm tracking-wide hover:bg-gray-100 transition-colors mt-2 sm:mt-4">
+          <Link
+            to="/men"
+            className="inline-block bg-white text-gray-900 px-5 sm:px-6 py-2 sm:py-2.5 text-xs sm:text-sm tracking-wide hover:bg-gray-100 transition-colors mt-2 sm:mt-4"
+          >
             SHOP NOW
-          </button>
+          </Link>
         </div>
       </div>
     </section>

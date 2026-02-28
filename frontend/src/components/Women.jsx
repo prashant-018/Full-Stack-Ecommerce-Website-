@@ -60,20 +60,35 @@ const Women = () => {
             p.image ||
             'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=500&fit=crop&crop=center';
 
+          const hasDiscount =
+            typeof p.originalPrice === 'number' &&
+            typeof p.price === 'number' &&
+            p.originalPrice > p.price;
+
           return {
+            // Preserve all original fields for components like ProductCard
+            ...p,
             id: p._id || p.id,
-            name: p.name,
-            price: p.originalPrice || p.price || 0,
-            salePrice: p.price < p.originalPrice ? p.price : null,
+            // Ensure price/originalPrice match backend values (already in INR)
+            price: typeof p.price === 'number' ? p.price : (p.originalPrice || 0),
+            originalPrice: typeof p.originalPrice === 'number'
+              ? p.originalPrice
+              : (p.price || 0),
+            // Optional salePrice used by filter helpers
+            salePrice: hasDiscount ? p.price : null,
+            // Normalize colors and sizes to simple strings for filtering,
+            // while still being compatible with ProductCard (it accepts strings).
             colors: (p.colors || []).map((c) =>
-              typeof c === 'string' ? c : (c.value || c.name || '').toLowerCase()
+              typeof c === 'string'
+                ? c
+                : (c.name || c.value || '').toLowerCase()
+            ),
+            sizes: (p.sizes || []).map((s) =>
+              typeof s === 'string'
+                ? s
+                : s.size || s.name || ''
             ),
             image: imageUrl,
-            isNew: p.isNew || p.isNewArrival || false,
-            sizes: (p.sizes || []).map((s) =>
-              typeof s === 'string' ? s : s.name || s.size || ''
-            ),
-            category: p.category,
             section: p.section, // Ensure section is included for filtering
             discountPercentage: p.discountPercentage || 0
           };

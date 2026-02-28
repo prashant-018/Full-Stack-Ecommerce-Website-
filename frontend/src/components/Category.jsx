@@ -1,29 +1,36 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const defaultItems = [
   {
     title: "SHIRTS",
     src: "https://i.pinimg.com/1200x/49/54/23/495423f5b21e8fbd182efc0042bb9ab1.jpg",
+    to: "/men",
   },
   {
     title: "DENIM",
     src: "https://i.pinimg.com/736x/07/4e/6f/074e6f77db5baac7351d51c2e8a49022.jpg",
+    to: "/men",
   },
   {
     title: "TEES",
     src: "https://i.pinimg.com/736x/13/e7/b5/13e7b5171be0998f81fd71df8f1956fd.jpg",
+    to: "/men",
   },
   {
     title: "PANTS",
     src: "https://i.pinimg.com/736x/84/71/de/8471de63f630ce977c562bafcb93b994.jpg",
+    to: "/men",
   },
   {
     title: "SWEATERS",
     src: "https://i.pinimg.com/736x/22/a8/51/22a851f2867ae431c849641fcd0d9e3d.jpg",
+    to: "/men",
   },
   {
     title: "OUTERWEAR",
     src: "https://i.pinimg.com/736x/fa/1a/8c/fa1a8c25d56315ad57e5cd1342648237.jpg",
+    to: "/men",
   },
 ];
 
@@ -35,16 +42,19 @@ const promoItems = [
     title: "New Arrivals",
     cta: "SHOP THE LATEST",
     src: "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?q=80&w=1600&auto=format&fit=crop",
+    to: "/men",
   },
   {
     title: "Best-Sellers",
     cta: "SHOP YOUR FAVORITES",
     src: "https://i.pinimg.com/736x/df/69/d1/df69d182addcf2fea9fee89845bff736.jpg",
+    to: "/women",
   },
   {
     title: "The Holiday Outfit",
     cta: "SHOP OCCASION",
     src: "https://i.pinimg.com/736x/18/24/43/182443283cdccfc5fb10c073e67c96ad.jpg",
+    to: "/men",
   },
 ];
 
@@ -54,7 +64,7 @@ export default function Category({ items = defaultItems }) {
       <h2 className="text-center text-base tracking-wide text-gray-800 mb-8">Shop by Category</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {items.map((it) => (
-          <a key={it.title} href="#" className="group block">
+          <Link key={it.title} to={it.to || "/products"} className="group block">
             <div className="w-full aspect-[3/4] bg-white overflow-hidden border border-gray-200">
               <img src={it.src} alt={it.title} className="w-full h-full object-cover object-center" />
             </div>
@@ -63,14 +73,14 @@ export default function Category({ items = defaultItems }) {
                 {it.title}
               </span>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
       {/* Featured Sections - Three equal height columns matching reference */}
       <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
         {promoItems.map((item, idx) => (
-          <a key={item.title} href="#" className="group relative block overflow-hidden">
+          <Link key={item.title} to={item.to || "/products"} className="group relative block overflow-hidden">
             {/* Fixed height container for consistent sizing */}
             <div className="w-full h-[400px] md:h-[450px] lg:h-[500px] bg-gray-100">
               <img
@@ -95,12 +105,12 @@ export default function Category({ items = defaultItems }) {
                 {item.cta}
               </button>
             </div>
-          </a>
+          </Link>
         ))}
       </div>
 
       <div className="mt-14 md:mt-16">
-        <a href="#" className="relative block overflow-hidden border border-gray-300">
+        <Link to="/about" className="relative block overflow-hidden border border-gray-300">
           <div
             className="w-full h-[220px] sm:h-[260px] md:h-[300px] bg-cover bg-center"
             style={{ backgroundImage: `url(${missionBannerSrc})` }}
@@ -111,7 +121,7 @@ export default function Category({ items = defaultItems }) {
             <p className="text-sm text-white/90 text-center">Read about our progress in our latest Impact Report.</p>
             <span className="inline-block bg-white text-gray-900 px-5 py-2 text-[12px] tracking-[0.18em] uppercase">LEARN MORE</span>
           </div>
-        </a>
+        </Link>
       </div>
     </section>
   );
