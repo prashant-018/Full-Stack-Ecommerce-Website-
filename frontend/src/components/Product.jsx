@@ -1,17 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { convertAndFormatPrice } from '../utils/currency';
-import api from '../services/api';
+import api, { fetchProductReviews, addProductReview, deleteProductReview } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Product = ({ onAddToCart }) => {
   // This param can be either a slug or a MongoDB ObjectId
   const { id: slugOrId } = useParams();
+  const { user, isAdmin } = useAuth();
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewStats, setReviewStats] = useState(null);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+  const [newReview, setNewReview] = useState({
+    rating: 5,
+    title: '',
+    comment: '',
+    sizeFit: 'True to Size',
+  });
 
   // Use ref to prevent multiple API calls
   const hasFetched = useRef(false);
@@ -145,6 +157,154 @@ const Product = ({ onAddToCart }) => {
     };
   }, [slugOrId]);
 
+  // Load reviews once product is loaded
+  useEffect(() => {
+    if (!product?._id) return;
+
+    const loadReviews = async () => {
+      try {
+        setReviewsLoading(true);
+        setReviewError('');
+        const data = await fetchProductReviews(product._id, {
+          page: 1,
+          limit: 10,
+          sortBy: 'newest',
+        });
+        if (data.success) {
+          setReviews(data.reviews || []);
+          setReviewStats({
+            ratingStats: data.ratingStats,
+            sizeFitStats: data.sizeFitStats,
+            totalReviews: data.pagination?.totalReviews || 0,
+          });
+        } else {
+          setReviewError(data.message || 'Failed to load reviews');
+        }
+      } catch (err) {
+        console.error('Error loading reviews:', err);
+        setReviewError('Failed to load reviews. Please try again.');
+      } finally {
+        setReviewsLoading(false);
+      }
+    };
+
+    loadReviews();
+  }, [product?._id]);
+
+  const handleReviewChange = (e) => {
+    const { name, value } = e.target;
+    setNewReview((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!product?._id) return;
+
+    try {
+      setReviewsLoading(true);
+      setReviewError('');
+      const payload = {
+        productId: product._id,
+        rating: Number(newReview.rating),
+        title: newReview.title.trim(),
+        comment: newReview.comment.trim(),
+        sizeFit: newReview.sizeFit,
+      };
+      const res = await addProductReview(payload);
+      if (res.success) {
+        // Optimistically prepend new review
+        setReviews((prev) => [res.review, ...prev]);
+        // Refresh stats from server
+        const statsData = await fetchProductReviews(product._id, {
+          page: 1,
+          limit: 10,
+          sortBy: 'newest',
+        });
+        if (statsData.success) {
+          setReviews(statsData.reviews || []);
+          setReviewStats({
+            ratingStats: statsData.ratingStats,
+            sizeFitStats: statsData.sizeFitStats,
+            totalReviews: statsData.pagination?.totalReviews || 0,
+          });
+        }
+        setNewReview({
+          rating: 5,
+          title: '',
+          comment: '',
+          sizeFit: 'True to Size',
+        });
+      } else {
+        setReviewError(res.message || 'Failed to add review');
+      }
+    } catch (err) {
+      console.error('Error adding review:', err);
+      const message =
+        err.response?.data?.message ||
+        (err.response?.status === 400
+          ? 'You may have already reviewed this product.'
+          : 'Failed to add review. Please try again.');
+      setReviewError(message);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!product?._id || !reviewId) return;
+    const confirmDelete = window.confirm('Are you sure you want to delete this review?');
+    if (!confirmDelete) return;
+
+    try {
+      setReviewsLoading(true);
+      setReviewError('');
+      const res = await deleteProductReview(reviewId);
+      if (res.success) {
+        // Refresh reviews and stats after delete
+        const data = await fetchProductReviews(product._id, {
+          page: 1,
+          limit: 10,
+          sortBy: 'newest',
+        });
+        if (data.success) {
+          setReviews(data.reviews || []);
+          setReviewStats({
+            ratingStats: data.ratingStats,
+            sizeFitStats: data.sizeFitStats,
+            totalReviews: data.pagination?.totalReviews || 0,
+          });
+        }
+      } else {
+        setReviewError(res.message || 'Failed to delete review');
+      }
+    } catch (err) {
+      console.error('Error deleting review:', err);
+      const message =
+        err.response?.data?.message ||
+        (err.response?.status === 403
+          ? 'You are not allowed to delete this review.'
+          : 'Failed to delete review. Please try again.');
+      setReviewError(message);
+    } finally {
+      setReviewsLoading(false);
+    }
+  };
+
+  const canDeleteReview = (review) => {
+    if (!user) return false;
+    if (isAdmin && typeof isAdmin === 'function' && isAdmin()) return true;
+
+    const reviewUserId =
+      review.userId?._id || review.userId?.id || review.userId || review.userId?._id?.toString();
+
+    if (!reviewUserId || !user._id) return false;
+
+    return String(reviewUserId) === String(user._id);
+  };
+
   const handleAddToCart = () => {
     // Validate size selection
     if (availableSizes.length > 0 && !selectedSize) {
@@ -263,9 +423,9 @@ const Product = ({ onAddToCart }) => {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-4">
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Left Side - Image Grid (2x3) */}
-          <div className="flex-1">
+          <div className="flex-1 mb-6 lg:mb-0">
             <div className="grid grid-cols-2 gap-2">
               {displayImages.slice(0, 6).map((image, index) => (
                 <div key={`image-${index}-${image}`} className="relative bg-gray-50">
@@ -291,7 +451,7 @@ const Product = ({ onAddToCart }) => {
           </div>
 
           {/* Right Side - Product Details */}
-          <div className="w-72 flex-shrink-0 pl-4">
+          <div className="w-full lg:w-72 lg:flex-shrink-0 lg:pl-4">
             {/* Best Seller Badge */}
             <div className="text-xs text-gray-500 mb-1 tracking-wide">
               {product.isFeatured ? 'BEST SELLER • ' : ''}
@@ -355,7 +515,7 @@ const Product = ({ onAddToCart }) => {
                   <span className="text-sm text-black">Size</span>
                   <button className="text-sm text-gray-500 underline hover:text-black">Size Guide</button>
                 </div>
-                <div className="grid grid-cols-6 gap-1">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-1">
                   {availableSizes.map((sizeObj) => {
                     const size = sizeObj.size;
                     const isOutOfStock = !sizeObj.isAvailable || sizeObj.stock <= 0;
@@ -558,150 +718,253 @@ const Product = ({ onAddToCart }) => {
 
         {/* Reviews Section */}
         <div className="mt-16 pt-8">
-          <h2 className="text-2xl font-medium text-center text-gray-700 mb-8">Reviews</h2>
+          <h2 className="text-2xl font-medium text-center text-gray-700 mb-8">
+            Reviews {reviewStats?.totalReviews ? `(${reviewStats.totalReviews})` : ''}
+          </h2>
 
           {/* Reviews Summary Box */}
-          <div className="bg-gray-100 p-6 mb-6">
-            <div className="flex items-center justify-between">
+          <div className="bg-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Overall Rating */}
               <div className="flex-1">
-                <div className="text-lg font-medium text-gray-700 mb-2">5.0 Overall Rating</div>
-                <div className="flex text-lg text-black">
-                  ★★★★★
+                <div className="text-lg font-medium text-gray-700 mb-2">
+                  {reviewStats?.ratingStats
+                    ? `${reviewStats.ratingStats.averageRating.toFixed(1)} Overall Rating`
+                    : 'No ratings yet'}
+                </div>
+                <div className="flex items-center text-lg text-black">
+                  {'★'.repeat(Math.round(reviewStats?.ratingStats?.averageRating || 0))}
+                  {'☆'.repeat(5 - Math.round(reviewStats?.ratingStats?.averageRating || 0))}
                 </div>
               </div>
 
               {/* Rating Breakdown */}
-              <div className="flex-1 px-8">
+              <div className="flex-1 lg:px-8">
                 <div className="space-y-1">
-                  {[5, 4, 3, 2, 1].map((stars) => (
-                    <div key={stars} className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">{stars}</span>
-                      <span className="text-sm text-gray-600">★</span>
-                      <div className="flex-1 bg-gray-300 h-1">
-                        <div
-                          className={`h-1 ${stars === 5 ? 'bg-black w-full' : 'bg-gray-300 w-0'}`}
-                        ></div>
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count =
+                      reviewStats?.ratingStats?.distribution?.[stars] || 0;
+                    const total = reviewStats?.ratingStats?.totalReviews || 0;
+                    const percentage = total ? Math.round((count / total) * 100) : 0;
+                    return (
+                      <div key={stars} className="flex items-center space-x-2">
+                        <span className="text-sm text-gray-600">{stars}</span>
+                        <span className="text-sm text-gray-600">★</span>
+                        <div className="flex-1 bg-gray-300 h-1">
+                          <div
+                            className="h-1 bg-black"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-sm text-gray-600">{count}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{stars === 5 ? '1' : '0'}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Fit Rating */}
               <div className="flex-1">
-                <div className="text-lg font-medium text-gray-700 mb-3">Runs slightly large</div>
+                <div className="text-lg font-medium text-gray-700 mb-3">
+                  {reviewStats?.sizeFitStats?.recommendation || 'True to Size'}
+                </div>
                 <div>
                   <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                    <span>Run small</span>
-                    <span>Run large</span>
+                    <span>Runs small</span>
+                    <span>Runs large</span>
                   </div>
                   <div className="w-full bg-gray-300 h-1 relative">
-                    <div className="absolute right-2 top-0 w-6 h-1 bg-black"></div>
+                    <div
+                      className="absolute top-0 w-6 h-1 bg-black"
+                      style={{
+                        left:
+                          reviewStats?.sizeFitStats?.recommendation === 'Runs Small'
+                            ? '0%'
+                            : reviewStats?.sizeFitStats?.recommendation === 'Runs Large'
+                            ? 'calc(100% - 1.5rem)'
+                            : '50%',
+                        transform:
+                          reviewStats?.sizeFitStats?.recommendation === 'True to Size'
+                            ? 'translateX(-50%)'
+                            : 'none',
+                      }}
+                    ></div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Filter and Sort */}
-          <div className="flex justify-between items-center mb-6 py-3">
-            <button className="flex items-center space-x-2 text-lg font-medium text-black">
-              <span>Filter</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-            <div className="flex items-center space-x-2">
-              <span className="text-lg text-black">Sort by:</span>
-              <select className="text-lg text-gray-500 border-none bg-transparent focus:outline-none">
-                <option>Highest to Lowest Rating</option>
-              </select>
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+          {/* Add Review Form */}
+          <div className="mb-10 border border-gray-200 rounded-lg p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Write a review
+            </h3>
+            {reviewError && (
+              <p className="text-sm text-red-600 mb-3">{reviewError}</p>
+            )}
+            <form onSubmit={handleSubmitReview} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rating
+                  </label>
+                  <select
+                    name="rating"
+                    value={newReview.rating}
+                    onChange={handleReviewChange}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                  >
+                    {[5, 4, 3, 2, 1].map((r) => (
+                      <option key={r} value={r}>
+                        {r} - {r === 5 ? 'Excellent' : r === 4 ? 'Good' : r === 3 ? 'Average' : r === 2 ? 'Poor' : 'Terrible'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Fit
+                  </label>
+                  <select
+                    name="sizeFit"
+                    value={newReview.sizeFit}
+                    onChange={handleReviewChange}
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                  >
+                    <option value="Runs Small">Runs Small</option>
+                    <option value="True to Size">True to Size</option>
+                    <option value="Runs Large">Runs Large</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  value={newReview.title}
+                  onChange={handleReviewChange}
+                  placeholder="Summarize your experience"
+                  required
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Comment
+                </label>
+                <textarea
+                  name="comment"
+                  value={newReview.comment}
+                  onChange={handleReviewChange}
+                  placeholder="What did you like or dislike? How does it fit?"
+                  required
+                  rows={4}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-black resize-y"
+                />
+              </div>
+              <div>
+                <button
+                  type="submit"
+                  disabled={reviewsLoading}
+                  className={`px-5 py-2 text-sm font-medium rounded ${
+                    reviewsLoading
+                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                      : 'bg-black text-white hover:bg-gray-800'
+                  }`}
+                >
+                  {reviewsLoading ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Individual Reviews */}
-          <div className="space-y-8">
-            {/* Review 1 */}
-            <div className="flex">
-              {/* Left Column - User Info */}
-              <div className="w-48 pr-6">
-                <div className="text-lg font-medium text-black mb-1">ElizabethRBklyn</div>
-                <div className="flex items-center space-x-1 mb-4">
-                  <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
+          {reviewsLoading && reviews.length === 0 ? (
+            <p className="text-center text-gray-500">Loading reviews...</p>
+          ) : reviews.length === 0 ? (
+            <p className="text-center text-gray-500">
+              No reviews yet. Be the first to review this product.
+            </p>
+          ) : (
+            <div className="space-y-8">
+              {reviews.map((review, index) => (
+                <div
+                  key={review._id || index}
+                  className={index === 0 ? '' : 'pt-6 border-t border-gray-200'}
+                >
+                  <div className="flex flex-col md:flex-row">
+                    {/* Left Column - User Info */}
+                    <div className="w-full md:w-48 md:pr-6 mb-4 md:mb-0">
+                      <div className="text-lg font-medium text-black mb-1 flex items-center justify-between">
+                        <span>
+                          {review.userId?.name ||
+                            `${review.userId?.firstName || ''} ${review.userId?.lastName || ''}`.trim() ||
+                            review.userName ||
+                            'Anonymous'}
+                        </span>
+                        {canDeleteReview(review) && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteReview(review._id)}
+                            className="ml-3 text-xs text-red-500 hover:text-red-700"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1 mb-2">
+                        {review.verifiedBuyer && (
+                          <>
+                            <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
+                              <svg
+                                className="w-2 h-2 text-white"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                            </div>
+                            <span className="text-sm text-gray-600">Verified Buyer</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {review.timeAgo || ''}
+                      </div>
+                    </div>
+
+                    {/* Right Column - Review Content */}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex text-lg text-black">
+                          {'★'.repeat(review.rating || 0)}
+                          {'☆'.repeat(5 - (review.rating || 0))}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {review.sizeFit || ''}
+                        </div>
+                      </div>
+
+                      <h4 className="text-lg font-medium text-black mb-1">
+                        {review.title}
+                      </h4>
+                      <p className="text-base text-gray-700 leading-relaxed">
+                        {review.comment}
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-sm text-gray-600">Verified</span>
                 </div>
-
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div><span className="font-medium text-black">Height:</span> 5'9" - 5'11"</div>
-                  <div><span className="font-medium text-black">Weight (lbs):</span> 161 - 180 lb</div>
-                  <div><span className="font-medium text-black">Body Type:</span> Petite</div>
-                  <div><span className="font-medium text-black">Size Purchased:</span> L</div>
-                  <div><span className="font-medium text-black">Usual Size:</span> L</div>
-                </div>
-              </div>
-
-              {/* Right Column - Review Content */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex text-lg text-black">★★★★★</div>
-                  <div className="text-sm text-gray-500">18 days ago</div>
-                </div>
-
-                <h4 className="text-lg font-medium text-black mb-2">Warm and very attractive on</h4>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  Got this to keep my husband warm on those chilly late fall days. He loves it as it not only
-                  is pretty warm but he looks good in it and he knows it.
-                </p>
-              </div>
+              ))}
             </div>
-
-            {/* Review 2 */}
-            <div className="flex pt-6 border-t border-gray-200">
-              {/* Left Column - User Info */}
-              <div className="w-48 pr-6">
-                <div className="text-lg font-medium text-black mb-1">Anonymous</div>
-                <div className="flex items-center space-x-1 mb-4">
-                  <div className="w-4 h-4 bg-black rounded-full flex items-center justify-center">
-                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <span className="text-sm text-gray-600">Verified</span>
-                </div>
-
-                <div className="text-sm text-gray-600 space-y-1">
-                  <div><span className="font-medium text-black">Height:</span> 5'9" - 5'11"</div>
-                  <div><span className="font-medium text-black">Weight (lbs):</span> 161 - 180 lb</div>
-                  <div><span className="font-medium text-black">Body Type:</span> Petite</div>
-                  <div><span className="font-medium text-black">Size Purchased:</span> L</div>
-                  <div><span className="font-medium text-black">Usual Size:</span> L</div>
-                </div>
-              </div>
-
-              {/* Right Column - Review Content */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex text-lg text-black">★★★★★</div>
-                  <div className="text-sm text-gray-500">14 days ago</div>
-                </div>
-
-                <h4 className="text-lg font-medium text-black mb-2">Super comfy</h4>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  Great quality, warm and super comfy. Got the XL cuz I have a large back and it fits
-                  perfect. It does run a bit oversized which is good.
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Transparent Pricing Section */}
@@ -715,7 +978,7 @@ const Product = ({ onAddToCart }) => {
             </p>
           </div>
 
-          <div className="flex justify-center items-end space-x-16">
+          <div className="flex flex-wrap justify-center items-stretch gap-10 lg:gap-16">
             {/* Materials */}
             <div className="text-center">
               <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">

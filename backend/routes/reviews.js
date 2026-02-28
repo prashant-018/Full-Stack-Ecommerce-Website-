@@ -178,9 +178,9 @@ router.get('/:productId', async (req, res) => {
 });
 
 // @route   DELETE /api/reviews/:id
-// @desc    Delete a review (Admin only)
-// @access  Private/Admin
-router.delete('/:id', auth, admin, async (req, res) => {
+// @desc    Delete a review (review owner or Admin)
+// @access  Private
+router.delete('/:id', auth, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
 
@@ -188,6 +188,18 @@ router.delete('/:id', auth, admin, async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Review not found'
+      });
+    }
+
+    const isAdminUser = req.user.role === 'admin';
+    const isOwner =
+      review.userId?.toString() === req.user.id?.toString() ||
+      review.userId?.toString() === req.user.userId?.toString();
+
+    if (!isAdminUser && !isOwner) {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete this review'
       });
     }
 

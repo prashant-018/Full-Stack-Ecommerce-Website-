@@ -16,3 +16,22 @@
 .animate-marquee {
   animation: marquee 20s linear infinite;
 }
+
+/* Everlane product swiper - premium slider, hide scrollbar */
+.everlane-product-swiper {
+  --swiper-scrollbar-size: 0;
+}
+.everlane-product-swiper .swiper-scrollbar,
+.everlane-product-swiper .swiper-scrollbar-drag {
+  display: none !important;
+}
+.everlane-product-swiper .swiper-wrapper {
+  align-items: stretch;
+}
+.everlane-product-swiper .swiper-slide {
+  height: auto;
+  display: flex;
+}
+.everlane-product-swiper .swiper-slide > * {
+  width: 100%;
+}

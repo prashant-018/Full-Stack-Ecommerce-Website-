@@ -57,13 +57,13 @@ const ProductCard = ({ product }) => {
   return (
     <Link
       to={`/product/${productKey}`}
-      className="group cursor-pointer block"
+      className="group cursor-pointer block rounded-2xl bg-white shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out"
       data-product-id={productId} // For debugging
       data-product-slug={productSlug} // For debugging
       data-product-section={product.section} // For debugging
     >
       {/* Product Image */}
-      <div className="aspect-[3/4] bg-gray-100 overflow-hidden mb-3 sm:mb-4 relative rounded-sm">
+      <div className="aspect-[3/4] bg-gray-100 overflow-hidden mb-3 sm:mb-4 relative rounded-t-2xl">
         {discountPercentage > 0 && (
           <div className="absolute top-2 sm:top-3 left-2 sm:left-3 bg-red-500 text-white px-2 py-1 text-xs font-medium z-10 rounded">
             {discountPercentage}% OFF
@@ -86,7 +86,7 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Product Info */}
-      <div className="space-y-1 sm:space-y-1.5">
+      <div className="space-y-1 sm:space-y-1.5 px-1 pb-1 rounded-b-2xl">
         <h3 className="text-sm font-medium text-black group-hover:text-gray-600 transition-colors line-clamp-2">
           {product.name}
         </h3>

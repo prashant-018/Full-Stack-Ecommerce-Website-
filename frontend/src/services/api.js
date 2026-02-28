@@ -262,6 +262,23 @@ export const getUserOrders = async () => {
   return response.data;
 };
 
+// Reviews API
+export const fetchProductReviews = async (productId, params = {}) => {
+  const queryParams = new URLSearchParams(params);
+  const response = await api.get(`/reviews/${productId}?${queryParams.toString()}`);
+  return response.data;
+};
+
+export const addProductReview = async (payload) => {
+  const response = await api.post('/reviews', payload);
+  return response.data;
+};
+
+export const deleteProductReview = async (reviewId) => {
+  const response = await api.delete(`/reviews/${reviewId}`);
+  return response.data;
+};
+
 // Admin API
 export const getDashboardStats = async () => {
   const response = await api.get('/admin/dashboard-stats');

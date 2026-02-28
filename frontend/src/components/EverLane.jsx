@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
 
 const sampleProducts = [
   {
@@ -218,7 +220,6 @@ const testimonials = [
 ];
 
 export default function EverLane({ products = sampleProducts }) {
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [testimonialSlide, setTestimonialSlide] = useState(0);
   const [isTestimonialHovered, setIsTestimonialHovered] = useState(false);
   const [isAutoScrollPaused, setIsAutoScrollPaused] = useState(false);
@@ -238,7 +239,6 @@ export default function EverLane({ products = sampleProducts }) {
     ];
   });
 
-  const totalSlides = Math.ceil(products.length / 5);
   const totalTestimonials = testimonials.length;
 
   // Auto-scroll effect for testimonials
@@ -310,14 +310,6 @@ export default function EverLane({ products = sampleProducts }) {
     input.click();
   };
 
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % totalSlides);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
-  };
-
   const nextTestimonial = () => {
     pauseAutoScroll();
     setTestimonialSlide((prev) => (prev + 1) % totalTestimonials);
@@ -348,85 +340,49 @@ export default function EverLane({ products = sampleProducts }) {
             </p>
           </div>
 
-          {/* Carousel */}
-          <div className="relative">
-            {/* Left Arrow - Hidden on mobile */}
-            <button
-              onClick={prevSlide}
-              className="hidden md:block absolute left-0 lg:left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-md text-2xl text-gray-600 hover:text-gray-900 transition-all"
-              aria-label="Previous"
+          {/* Premium horizontal scroll slider - Swiper */}
+          <div className="everlane-product-swiper overflow-hidden">
+            <Swiper
+              slidesPerView={1.2}
+              spaceBetween={12}
+              grabCursor={true}
+              freeMode={false}
+              breakpoints={{
+                640: { slidesPerView: 2, spaceBetween: 16 },
+                1024: { slidesPerView: 4, spaceBetween: 20 }
+              }}
+              className="!overflow-visible"
             >
-              ‹
-            </button>
+              {products.map((product) => (
+                <SwiperSlide key={product.id}>
+                  <div className="everlane-card group cursor-pointer h-full rounded-2xl bg-white shadow-md hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 ease-out overflow-hidden">
+                    {/* Product Image with Aspect Ratio */}
+                    <div className="aspect-[3/4] bg-gray-100 overflow-hidden rounded-t-2xl">
+                      <img
+                        src={product.src}
+                        alt={product.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={handleImageError}
+                        loading="lazy"
+                      />
+                    </div>
 
-            {/* Right Arrow - Hidden on mobile */}
-            <button
-              onClick={nextSlide}
-              className="hidden md:block absolute right-0 lg:right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-md text-2xl text-gray-600 hover:text-gray-900 transition-all"
-              aria-label="Next"
-            >
-              ›
-            </button>
-
-            {/* Products - Responsive Grid */}
-            <div className="overflow-hidden px-0 md:px-12 lg:px-14">
-              <div
-                className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentSlide * 100}%)` }}
-              >
-                {Array.from({ length: totalSlides }).map((_, slideIndex) => (
-                  <div key={slideIndex} className="w-full flex-shrink-0">
-                    {/* Responsive Grid: 1 col mobile, 2 col sm, 3 col md, 4 col lg, 5 col xl */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
-                      {products
-                        .slice(slideIndex * 5, slideIndex * 5 + 5)
-                        .map((product) => (
-                          <div key={product.id} className="group cursor-pointer">
-                            {/* Product Image with Aspect Ratio */}
-                            <div className="aspect-[3/4] bg-gray-100 mb-3 sm:mb-4 overflow-hidden rounded-sm">
-                              <img
-                                src={product.src}
-                                alt={product.title}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                onError={handleImageError}
-                                loading="lazy"
-                              />
-                            </div>
-
-                            {/* Product Info */}
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-start">
-                                <span className="text-xs sm:text-sm font-medium text-gray-900">
-                                  {product.price}
-                                </span>
-                              </div>
-                              <h3 className="text-xs sm:text-sm text-gray-900 leading-tight line-clamp-2">
-                                {product.title}
-                              </h3>
-                              <p className="text-xs text-gray-500">
-                                {product.color}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                    {/* Product Info */}
+                    <div className="p-3 sm:p-4 space-y-1 rounded-b-2xl">
+                      <span className="text-sm sm:text-base font-semibold text-gray-900 block">
+                        {product.price}
+                      </span>
+                      <h3 className="text-sm text-gray-900 leading-tight line-clamp-2">
+                        {product.title}
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        {product.color}
+                      </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Pagination Dots */}
-          <div className="flex justify-center mt-6 space-x-1.5">
-            {Array.from({ length: totalSlides }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${index === currentSlide ? 'bg-gray-900' : 'bg-gray-400'
-                  }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </div>
         </div>
       </div>
