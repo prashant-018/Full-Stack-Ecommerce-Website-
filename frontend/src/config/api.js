@@ -29,7 +29,8 @@ const getApiBaseUrl = () => {
   // Production: Use environment variable or fallback
   // NEVER use localhost in production
   const envUrl = import.meta.env.VITE_API_URL;
-  const productionFallback = 'https://full-stack-ecommerce-website-2-8vaf.onrender.com';
+  // Single canonical production backend (same host used everywhere)
+  const productionFallback = 'https://cafes-20-main-6.onrender.com';
   
   // Use env var if set, otherwise use fallback
   let baseUrl = envUrl || productionFallback;
@@ -62,7 +63,7 @@ const getApiBaseUrl = () => {
   if (!envUrl && isProduction) {
     console.error('❌ CRITICAL: VITE_API_URL not set in production!');
     console.error('📋 Set VITE_API_URL in Vercel Dashboard → Settings → Environment Variables');
-    console.error('   Value should be: https://full-stack-ecommerce-website-2-8vaf.onrender.com');
+    console.error(`   Value should be your backend origin, e.g. ${productionFallback}`);
     console.warn('⚠️  Using fallback URL:', url);
   }
   

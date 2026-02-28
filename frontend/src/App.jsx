@@ -28,6 +28,7 @@ import UserProfile from './components/UserProfile'
 import OrderSuccess from './pages/OrderSuccess'
 import { ProtectedRoute, AdminRoute, PublicRoute } from './components/ProtectedRoute'
 import { getCart, addItemToCart } from './services/api'
+import API_URL from './config/api'
 import { AuthProvider } from './contexts/AuthContext'
 import ApiDebugPanel from './components/ApiDebugPanel'
 
@@ -265,7 +266,9 @@ function AppContent() {
 function App() {
   // Keep-alive ping to prevent Render backend from sleeping
   useEffect(() => {
-    const BACKEND_URL = 'https://cafes-20-main-6.onrender.com';
+    // Derive backend origin from the same API_URL used everywhere else
+    // API_URL already includes /api, so strip it back to the origin
+    const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
     const PING_INTERVAL = 10 * 60 * 1000; // 10 minutes
 
     const pingBackend = async () => {
